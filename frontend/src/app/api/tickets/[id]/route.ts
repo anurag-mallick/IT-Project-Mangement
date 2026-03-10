@@ -37,16 +37,37 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
       changes.push(`priority from **${currentTicket.priority}** to **${priority}**`);
     }
 
-    if (changes.length > 0 && user.id) { // We map Supabase email user IDs? Wait, our User ID logic!
-      // In the future this should map user email -> prisma user.id
-      // For now we'll create system logs without author if they don't have integer id
-      await prisma.comment.create({
-        data: {
-          content: `System: Updated ${changes.join(' and ')}`,
-          ticketId: parseInt(id),
-          authorName: user.email || 'System'
-        }
+    if (changes.length > 0) {
+      // Find the user if they exist in our DB
+      const dbUser = await prisma.user.findFirst({
+        where: { username: user.email }
       });
+
+      const logs = [];
+      if (status && status !== currentTicket.status) {
+        logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'STATUS_CHANGE', field: 'status', oldValue: currentTicket.status, newValue: status });
+      }
+      if (priority && priority !== currentTicket.priority) {
+        logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'PRIORITY_CHANGE', field: 'priority', oldValue: currentTicket.priority, newValue: priority });
+      }
+      if ('assignedToId' in body && assignedToId !== currentTicket.assignedToId) {
+        logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'ASSIGNMENT_CHANGE', field: 'assignedToId', oldValue: currentTicket.assignedToId ? String(currentTicket.assignedToId) : null, newValue: assignedToId ? String(assignedToId) : null });
+      }
+
+      if (logs.length > 0) {
+        await prisma.activityLog.createMany({
+          data: logs
+        });
+        
+        // Keep the system comment for visibility in the thread for now
+        await prisma.comment.create({
+          data: {
+            content: `System: Updated ${changes.join(' and ')}`,
+            ticketId: parseInt(id),
+            authorName: user.email || 'System'
+          }
+        });
+      }
     }
 
     return NextResponse.json(updatedTicket);

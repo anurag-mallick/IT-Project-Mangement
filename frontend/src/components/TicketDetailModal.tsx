@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Ticket, Comment as TicketComment, User, Priority } from '../types';
 import { X, Send, User as UserIcon, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { uploadAttachment } from '@/lib/storage';
 
 interface TicketDetailModalProps {
   ticket: Ticket | null;
@@ -164,7 +165,25 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
               </select>
             </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-3 mt-4">
+            <label className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer transition-colors flex items-center gap-2">
+              <input type="file" className="hidden" onChange={async (e) => {
+                if (e.target.files && e.target.files[0] && ticket) {
+                   const file = e.target.files[0];
+                   try {
+                     setSaving(true);
+                     await uploadAttachment(ticket.id, file);
+                     console.log("Uploaded file:", file.name);
+                     // You could trigger a fetch of attachments here
+                   } catch (err) {
+                     console.error("Upload failed", err);
+                   } finally {
+                     setSaving(false);
+                   }
+                }
+              }} />
+              Attach File
+            </label>
             <button onClick={saveTicket} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50">
               {saving ? 'Saving...' : 'Save Changes'}
             </button>

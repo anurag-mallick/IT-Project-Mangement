@@ -5,8 +5,6 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 // Role: ADMIN, STAFF
@@ -14,32 +12,36 @@ datasource db {
 // Priority: P0 (Critical), P1 (High), P2 (Normal - default), P3 (Low)
 
 model User {
-  id        Int       @id @default(autoincrement())
-  username  String    @unique
-  password  String
-  name      String?
-  role      String    @default("STAFF")
-  isActive  Boolean   @default(true)
-  tickets   Ticket[]  @relation("AssignedTickets")
-  comments  Comment[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  password     String
+  name         String?
+  role         String        @default("STAFF")
+  isActive     Boolean       @default(true)
+  tickets      Ticket[]      @relation("AssignedTickets")
+  comments     Comment[]
+  attachments  Attachment[]
+  activityLogs ActivityLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Ticket {
-  id            Int       @id @default(autoincrement())
+  id            Int          @id @default(autoincrement())
   title         String
   description   String
-  status        String    @default("TODO")
-  priority      String    @default("P2")
+  status        String       @default("TODO")
+  priority      String       @default("P2")
   requesterName String?
-  assignedTo    User?     @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assignedTo    User?        @relation("AssignedTickets", fields: [assignedToId], references: [id])
   assignedToId  Int?
   slaBreachAt   DateTime?
   tasks         Task[]
   comments      Comment[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  attachments   Attachment[]
+  activityLogs  ActivityLog[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Comment {
@@ -51,6 +53,32 @@ model Comment {
   authorId   Int?
   authorName String?
   createdAt  DateTime @default(now())
+}
+
+model Attachment {
+  id        Int      @id @default(autoincrement())
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  ticketId  Int
+  uploadedBy User?    @relation(fields: [authorId], references: [id])
+  authorId  Int?
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  ticketId  Int
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
+  action    String   // e.g., "STATUS_CHANGE", "ASSIGNMENT", "PRIORITY_CHANGE"
+  field     String?  // e.g., "status"
+  oldValue  String?
+  newValue  String?
+  createdAt DateTime @default(now())
 }
 
 model Task {

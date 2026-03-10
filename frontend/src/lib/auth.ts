@@ -29,14 +29,14 @@ export async function verifyUser(req: NextRequest) {
 }
 
 // Higher order function for API route protection
-export function withAuth(handler: (req: NextRequest, user: any) => Promise<NextResponse>) {
-  return async (req: NextRequest) => {
+export function withAuth(handler: (req: NextRequest, user: any, context?: any) => Promise<NextResponse>) {
+  return async (req: NextRequest, context?: any) => {
     const { user, error } = await verifyUser(req);
     
     if (error || !user) {
       return NextResponse.json({ error: 'Unauthorized', details: error }, { status: 401 });
     }
     
-    return handler(req, user);
+    return handler(req, user, context);
   };
 }
