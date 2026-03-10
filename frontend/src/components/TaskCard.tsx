@@ -8,15 +8,15 @@ interface TaskCardProps {
   onDragStart: (e: React.DragEvent) => void;
 }
 
-const priorityConfig: Record<string, { bg: string; text: string }> = {
-  URGENT: { bg: 'bg-red-500/20', text: 'text-red-400' },
-  HIGH:   { bg: 'bg-orange-500/20', text: 'text-orange-400' },
-  MEDIUM: { bg: 'bg-indigo-500/20', text: 'text-indigo-400' },
-  LOW:    { bg: 'bg-zinc-500/20', text: 'text-zinc-400' },
+const priorityConfig: Record<string, { bg: string; text: string; label: string }> = {
+  P0: { bg: 'bg-red-500/20',    text: 'text-red-400',    label: 'P0 – Critical' },
+  P1: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: 'P1 – High' },
+  P2: { bg: 'bg-indigo-500/20', text: 'text-indigo-400', label: 'P2 – Normal' },
+  P3: { bg: 'bg-zinc-500/20',   text: 'text-zinc-400',   label: 'P3 – Low' },
 };
 
 const TaskCard = ({ ticket, onDragStart }: TaskCardProps) => {
-  const priority = priorityConfig[ticket.priority] ?? priorityConfig.MEDIUM;
+  const priority = priorityConfig[ticket.priority] ?? priorityConfig.P2;
   const completedTasks = ticket.tasks?.filter((t: Task) => t.status === 'DONE').length ?? 0;
   const totalTasks = ticket.tasks?.length ?? 0;
 

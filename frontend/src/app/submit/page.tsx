@@ -8,14 +8,14 @@ const PublicTicketForm = () => {
     title: '',
     description: '',
     requesterName: '',
-    priority: 'MEDIUM'
+    priority: 'P2'
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/public/tickets', {
+      const res = await fetch(${process.env.NEXT_PUBLIC_API_URL}, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -73,10 +73,10 @@ const PublicTicketForm = () => {
               onChange={(e) => setFormData({...formData, priority: e.target.value})}
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors appearance-none"
             >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
+              <option value="P3">P3 – Low</option>
+              <option value="P2">P2 – Normal</option>
+              <option value="P1">P1 – High</option>
+              <option value="P0">P0 – Critical</option>
             </select>
           </div>
         </div>

@@ -1,4 +1,4 @@
-export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type Priority = 'P0' | 'P1' | 'P2' | 'P3';
 export type TicketStatus = 'TODO' | 'IN_PROGRESS' | 'AWAITING_USER' | 'RESOLVED' | 'CLOSED';
 export type UserRole = 'ADMIN' | 'STAFF' | 'USER';
 

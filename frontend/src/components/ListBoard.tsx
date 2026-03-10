@@ -6,10 +6,14 @@ import { Ticket } from '@/types';
 import TicketDetailModal from '@/components/TicketDetailModal';
 
 const priorityColor: Record<string, string> = {
-  URGENT: 'text-red-400',
-  HIGH:   'text-orange-400',
-  MEDIUM: 'text-indigo-400',
-  LOW:    'text-zinc-400',
+  P0: 'text-red-400',
+  P1: 'text-orange-400',
+  P2: 'text-indigo-400',
+  P3: 'text-zinc-400',
+};
+
+const PRIORITY_LABELS: Record<string, string> = {
+  P0: 'P0 – Critical', P1: 'P1 – High', P2: 'P2 – Normal', P3: 'P3 – Low',
 };
 
 const statusColors: Record<string, string> = {
@@ -31,7 +35,7 @@ const ListBoard = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:4000/api/tickets', {
+      const res = await fetch(${process.env.NEXT_PUBLIC_API_URL}, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!res.ok) throw new Error('Failed to fetch tickets');
@@ -95,8 +99,8 @@ const ListBoard = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`text-[10px] font-bold uppercase ${priorityColor[ticket.priority] ?? 'text-white/40'}`}>
-                      {ticket.priority}
+                    <span className={`text-[10px] font-bold ${priorityColor[ticket.priority] ?? 'text-white/40'}`}>
+                      {PRIORITY_LABELS[ticket.priority] ?? ticket.priority}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-xs text-white/40">{ticket.requesterName || '—'}</td>

@@ -10,6 +10,7 @@ datasource db {
 // SQLite does not support native Enums, using Strings
 // Role: ADMIN, STAFF
 // TicketStatus: TODO, IN_PROGRESS, AWAITING_USER, RESOLVED, CLOSED
+// Priority: P0 (Critical), P1 (High), P2 (Normal - default), P3 (Low)
 
 model User {
   id        Int      @id @default(autoincrement())
@@ -29,7 +30,7 @@ model Ticket {
   title         String
   description   String
   status        String       @default("TODO")
-  priority      String       @default("MEDIUM")
+  priority      String       @default("P2")
   requesterName String?      // Optional for anonymous submissions
   assignedTo    User?        @relation("AssignedTickets", fields: [assignedToId], references: [id])
   assignedToId  Int?
