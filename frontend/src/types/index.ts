@@ -22,6 +22,16 @@ export interface Comment {
   };
 }
 
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  ticketId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Ticket {
   id: number;
   title: string;
@@ -35,6 +45,7 @@ export interface Ticket {
     name: string;
   };
   comments?: Comment[];
+  tasks?: Task[];
   createdAt: string;
   updatedAt: string;
   slaBreachAt?: string;

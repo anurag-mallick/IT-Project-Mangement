@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Ticket, Comment as TicketComment } from '../types';
-import { X, Send, User, Clock, MessageSquare, Tag, AlertCircle } from 'lucide-react';
+import { X, Send, User, Clock, MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface TicketDetailModalProps {
   ticket: Ticket | null;
@@ -16,6 +16,8 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
   const [comments, setComments] = useState<TicketComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [commentSuccess, setCommentSuccess] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   useEffect(() => {
     if (isOpen && ticket) {
@@ -51,6 +53,8 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
       if (res.ok) {
         setNewComment('');
         fetchComments();
+        setCommentSuccess(true);
+        setTimeout(() => setCommentSuccess(false), 2000);
       }
     } catch (err) {
       alert('Error adding comment');
@@ -60,6 +64,7 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
   };
 
   const updateStatus = async (newStatus: string) => {
+    setStatusUpdating(true);
     try {
       await fetch(`http://localhost:4000/api/tickets/${ticket?.id}`, {
         method: 'PATCH',
@@ -72,6 +77,8 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
       onUpdate();
     } catch (err) {
       console.error('Failed to update status');
+    } finally {
+      setStatusUpdating(false);
     }
   };
 
@@ -85,10 +92,16 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
         <header className="p-6 border-b border-white/5 flex items-center justify-between bg-zinc-900/50">
           <div className="flex items-center gap-4">
             <span className="text-white/20 font-mono text-xs">#{ticket.id}</span>
-            <div className="flex items-center gap-2 bg-white/5 px-3 py-1 rounded-md border border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-              <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-              <span className="text-[10px] font-bold uppercase tracking-wider">{ticket.status}</span>
-            </div>
+            <select
+              value={ticket.status}
+              disabled={statusUpdating}
+              onChange={(e) => updateStatus(e.target.value)}
+              className="bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-md text-white focus:outline-none focus:border-indigo-500/50 disabled:opacity-60 cursor-pointer"
+            >
+              {['TODO','IN_PROGRESS','AWAITING_USER','RESOLVED','CLOSED'].map(s => (
+                <option key={s} value={s}>{s.replace('_',' ')}</option>
+              ))}
+            </select>
           </div>
           <button onClick={onClose} className="text-white/40 hover:text-white p-2 hover:bg-white/5 rounded-lg transition-all">
             <X size={20} />
@@ -98,11 +111,17 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-4 leading-tight">{ticket.title}</h2>
-            <div className="flex gap-6 text-[11px] text-white/40 uppercase tracking-widest font-bold">
+            <div className="flex flex-wrap gap-6 text-[11px] text-white/40 uppercase tracking-widest font-bold">
               <div className="flex items-center gap-2">
                 <User size={14} className="text-white/20" />
                 <span>Assigned: <span className="text-white/60 ml-1">{ticket.assignedTo?.name || 'Unassigned'}</span></span>
               </div>
+              {ticket.requesterName && (
+                <div className="flex items-center gap-2">
+                  <User size={14} className="text-white/20" />
+                  <span>Requester: <span className="text-white/60 ml-1">{ticket.requesterName}</span></span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <AlertCircle size={14} className="text-white/20" />
                 <span>Priority: <span className={`ml-1 ${
@@ -158,7 +177,11 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
               rows={3}
             ></textarea>
             <div className="absolute right-3 bottom-3 flex items-center gap-3">
-              <span className="text-[10px] text-white/20 font-bold uppercase tracking-tighter">Markdown supported</span>
+              {commentSuccess && (
+                <span className="text-[10px] text-green-400 flex items-center gap-1 font-bold">
+                  <CheckCircle size={12} /> Added
+                </span>
+              )}
               <button 
                 type="submit"
                 disabled={loading || !newComment.trim()}

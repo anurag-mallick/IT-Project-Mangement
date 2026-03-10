@@ -1,72 +1,71 @@
 "use client";
 import React from 'react';
-import { MoreHorizontal, MessageSquare, Paperclip, CheckSquare, Clock } from 'lucide-react';
-import { Ticket } from '@/types';
+import { MessageSquare, CheckSquare, Clock } from 'lucide-react';
+import { Ticket, Task } from '@/types';
 
 interface TaskCardProps {
   ticket: Ticket;
   onDragStart: (e: React.DragEvent) => void;
 }
 
+const priorityConfig: Record<string, { bg: string; text: string }> = {
+  URGENT: { bg: 'bg-red-500/20', text: 'text-red-400' },
+  HIGH:   { bg: 'bg-orange-500/20', text: 'text-orange-400' },
+  MEDIUM: { bg: 'bg-indigo-500/20', text: 'text-indigo-400' },
+  LOW:    { bg: 'bg-zinc-500/20', text: 'text-zinc-400' },
+};
+
 const TaskCard = ({ ticket, onDragStart }: TaskCardProps) => {
-  const isUrgent = ticket.priority === 'URGENT';
-  const isHigh = ticket.priority === 'HIGH';
+  const priority = priorityConfig[ticket.priority] ?? priorityConfig.MEDIUM;
+  const completedTasks = ticket.tasks?.filter((t: Task) => t.status === 'DONE').length ?? 0;
+  const totalTasks = ticket.tasks?.length ?? 0;
 
   return (
-    <div 
+    <div
       draggable
       onDragStart={onDragStart}
       className="bg-zinc-900 border border-white/5 rounded-xl p-4 shadow-sm hover:shadow-xl hover:border-indigo-500/30 transition-all cursor-grab active:cursor-grabbing group"
     >
-      {/* Card Header: Priority & ID */}
+      {/* Priority & ID */}
       <div className="flex justify-between items-start mb-3">
-        <div className="flex gap-2">
-          <span className={`text-[9px] font-black tracking-tighter uppercase px-1.5 py-0.5 rounded ${
-            isUrgent ? 'bg-red-500/20 text-red-500' :
-            isHigh ? 'bg-orange-500/20 text-orange-500' :
-            'bg-indigo-500/20 text-indigo-400'
-          }`}>
+        <div className="flex items-center gap-2">
+          <span className={`text-[9px] font-black tracking-tighter uppercase px-1.5 py-0.5 rounded ${priority.bg} ${priority.text}`}>
             {ticket.priority}
           </span>
-          <span className="text-[9px] text-white/20 font-mono tracking-tighter mt-0.5">#{ticket.id}</span>
+          <span className="text-[9px] text-white/20 font-mono">#{ticket.id}</span>
         </div>
-        <MoreHorizontal size={14} className="text-white/10 group-hover:text-white/40 transition-colors" />
+        {ticket.assignedTo && (
+          <div className="w-5 h-5 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] font-bold border border-zinc-900" title={ticket.assignedTo.name}>
+            {ticket.assignedTo.name[0].toUpperCase()}
+          </div>
+        )}
       </div>
 
-      {/* Card Body: Title & Tags */}
-      <h4 className="text-xs font-semibold text-white/90 leading-relaxed mb-3 group-hover:text-white transition-colors">
+      {/* Title */}
+      <h4 className="text-xs font-semibold text-white/90 leading-relaxed mb-3 group-hover:text-white transition-colors line-clamp-2">
         {ticket.title}
       </h4>
 
-      <div className="flex flex-wrap gap-1.5 mb-4">
-        <span className="bg-white/5 border border-white/5 text-[9px] px-1.5 py-0.5 rounded text-white/40">Infrastructure</span>
-        <span className="bg-white/5 border border-white/5 text-[9px] px-1.5 py-0.5 rounded text-white/40">Critical Fix</span>
-      </div>
-
-      {/* Card Footer: Metadata & Assignee */}
-      <div className="pt-3 border-t border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-3 text-white/20">
+      {/* Footer */}
+      <div className="pt-3 border-t border-white/5 flex items-center gap-4 text-white/20">
+        {(ticket.comments?.length ?? 0) > 0 && (
           <div className="flex items-center gap-1">
-            <MessageSquare size={12} />
-            <span className="text-[10px]">{ticket.comments?.length || 0}</span>
+            <MessageSquare size={11} />
+            <span className="text-[10px]">{ticket.comments!.length}</span>
           </div>
+        )}
+        {totalTasks > 0 && (
           <div className="flex items-center gap-1">
-            <CheckSquare size={12} />
-            <span className="text-[10px]">0/4</span>
+            <CheckSquare size={11} />
+            <span className="text-[10px]">{completedTasks}/{totalTasks}</span>
           </div>
-          {ticket.slaBreachAt && (
-             <div className="flex items-center gap-1 text-red-500/50">
-               <Clock size={12} />
-               <span className="text-[10px]">2h</span>
-             </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 border border-zinc-900 flex items-center justify-center text-[8px] font-bold">
-            {ticket.assignedTo?.name?.[0] || 'U'}
+        )}
+        {ticket.slaBreachAt && new Date(ticket.slaBreachAt) < new Date() && (
+          <div className="flex items-center gap-1 text-red-400/70">
+            <Clock size={11} />
+            <span className="text-[10px]">SLA</span>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

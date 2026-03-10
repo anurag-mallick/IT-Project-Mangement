@@ -10,10 +10,17 @@ const UserManagement = () => {
   const { token } = useAuth();
 
   const fetchUsers = async () => {
-    // Note: Backend doesn't have a direct GET /users for listing yet based on userRoutes.js
-    // but we can at least show the current user or wait for an implementation.
-    // However, I'll mock some data for now if fetch fails or just show the admin.
-    setUsers([{ id: 1, name: 'System Admin', username: 'admin', role: 'ADMIN', isActive: true }]);
+    try {
+      const res = await fetch('http://localhost:4000/api/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUsers(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch users');
+    }
   };
 
   useEffect(() => {
@@ -62,7 +69,7 @@ const UserManagement = () => {
             </thead>
             <tbody className="divide-y divide-white/5">
               {users.map(u => (
-                <tr key={u.id} className="hover:bg-white/[0.02] transition-colors group">
+                <tr key={u.id} className="hover:bg-white/2 transition-colors group">
                   <td className="px-6 py-4 font-medium">{u.name}</td>
                   <td className="px-6 py-4 text-white/40">{u.username}</td>
                   <td className="px-6 py-4">

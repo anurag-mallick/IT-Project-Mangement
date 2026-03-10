@@ -17,6 +17,19 @@ router.post('/login', async (req, res) => {
   res.json({ token, user: { id: user.id, username: user.username, role: user.role } });
 });
 
+// Admin: List all users
+router.get('/users', authenticate, authorize(['ADMIN']), async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, username: true, name: true, role: true, isActive: true, createdAt: true },
+      orderBy: { createdAt: 'asc' }
+    });
+    res.json(users);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 // Admin: Create staff user
 router.post('/users', authenticate, authorize(['ADMIN']), async (req, res) => {
   const { username, password, name, role } = req.body;

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import KanbanBoard from '@/components/KanbanBoard';
 import ListBoard from '@/components/ListBoard';
 import ReportsView from '@/components/ReportsView';
@@ -11,6 +11,8 @@ import NewTicketModal from '@/components/NewTicketModal';
 const Dashboard = () => {
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'reports'>('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const handleTicketCreated = () => setRefreshKey(k => k + 1);
 
   return (
     <AuthGuard>
@@ -25,8 +27,8 @@ const Dashboard = () => {
           <NavHeader activeView={activeView} setActiveView={setActiveView} />
           
           <div className="p-8 max-w-7xl mx-auto w-full">
-            {activeView === 'kanban' && <KanbanBoard />}
-            {activeView === 'list' && <ListBoard />}
+            {activeView === 'kanban' && <KanbanBoard key={refreshKey} />}
+            {activeView === 'list' && <ListBoard key={refreshKey} />}
             {activeView === 'reports' && <ReportsView />}
           </div>
         </main>
@@ -35,7 +37,7 @@ const Dashboard = () => {
       <NewTicketModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        onSuccess={() => window.location.reload()} 
+        onSuccess={handleTicketCreated} 
       />
     </AuthGuard>
   );

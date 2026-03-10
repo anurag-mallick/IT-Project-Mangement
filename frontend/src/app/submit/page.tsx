@@ -40,7 +40,15 @@ const PublicTicketForm = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-20 px-6">
+    <div className="min-h-screen bg-zinc-950 text-white">
+      <header className="h-14 border-b border-white/5 flex items-center px-8 gap-4 bg-black/20 backdrop-blur-md">
+        <a href="/" className="text-white/40 hover:text-white text-sm font-medium transition-colors flex items-center gap-2">
+          ← Back to Dashboard
+        </a>
+        <div className="w-px h-4 bg-white/10" />
+        <span className="text-sm font-bold text-white/60">Submit Support Request</span>
+      </header>
+      <div className="max-w-2xl mx-auto py-16 px-6">
       <div className="mb-12 text-center">
         <h1 className="text-4xl mb-4">Support Request</h1>
         <p className="text-white/40">Need help? Fill out the form below and our IT team will get back to you. Anonymity is supported.</p>
@@ -105,6 +113,7 @@ const PublicTicketForm = () => {
           {loading ? 'Submitting...' : 'Submit Ticket'}
         </button>
       </form>
+    </div>
     </div>
   );
 };
