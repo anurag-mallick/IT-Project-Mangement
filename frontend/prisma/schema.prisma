@@ -38,7 +38,11 @@ model Ticket {
   assignedTo    User?        @relation("AssignedTickets", fields: [assignedToId], references: [id])
   assignedToId  Int?
   slaBreachAt   DateTime?
+  dueDate       DateTime?
+  timeSpent     Int          @default(0)
+  tags          String[]
   tasks         Task[]
+  checklists    ChecklistItem[]
   comments      Comment[]
   attachments   Attachment[]
   activityLogs  ActivityLog[]
@@ -107,8 +111,19 @@ model Automation {
   id        Int      @id @default(autoincrement())
   name      String
   trigger   String
+  condition String?
   action    String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ChecklistItem {
+  id          Int      @id @default(autoincrement())
+  title       String
+  isCompleted Boolean  @default(false)
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

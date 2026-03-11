@@ -3,13 +3,14 @@ import React, { useState, useRef } from 'react';
 import KanbanBoard from '@/components/KanbanBoard';
 import ListBoard from '@/components/ListBoard';
 import ReportsView from '@/components/ReportsView';
+import CalendarView from '@/components/CalendarView';
 import Sidebar from '@/components/DashboardSidebar';
 import AuthGuard from '@/components/AuthGuard';
 import NavHeader from '@/components/NavHeader';
 import NewTicketModal from '@/components/NewTicketModal';
 
 const Dashboard = () => {
-  const [activeView, setActiveView] = useState<'kanban' | 'list' | 'reports'>('kanban');
+  const [activeView, setActiveView] = useState<'kanban' | 'list' | 'reports' | 'calendar'>('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const handleTicketCreated = () => setRefreshKey(k => k + 1);
@@ -30,6 +31,7 @@ const Dashboard = () => {
             {activeView === 'kanban' && <KanbanBoard key={refreshKey} />}
             {activeView === 'list' && <ListBoard key={refreshKey} />}
             {activeView === 'reports' && <ReportsView />}
+            {activeView === 'calendar' && <CalendarView key={refreshKey} />}
           </div>
         </main>
       </div>

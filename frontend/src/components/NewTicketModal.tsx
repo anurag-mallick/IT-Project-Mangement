@@ -29,12 +29,14 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
     priority: Priority;
     status: TicketStatus;
     assignedToId: string;
+    tags: string;
   }>({
     title: '',
     description: '',
     priority: 'P2',
     status: 'TODO',
     assignedToId: '',
+    tags: '',
   });
 
   useEffect(() => {
@@ -62,6 +64,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
         description: formData.description,
         priority: formData.priority,
         status: formData.status,
+        tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
       };
       if (formData.assignedToId) body.assignedToId = parseInt(formData.assignedToId);
 
@@ -159,7 +162,18 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1 block">Description *</label>
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1 block">Tags (comma-separated)</label>
+            <input 
+              type="text" 
+              value={formData.tags}
+              onChange={(e) => setFormData({...formData, tags: e.target.value})}
+              placeholder="e.g. bug, network, hardware"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1 block">Description (Markdown Supported) *</label>
             <textarea 
               required
               rows={4}

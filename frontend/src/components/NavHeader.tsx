@@ -1,10 +1,10 @@
 "use client";
 import React from 'react';
-import { ChevronRight, Share2, Star, MoreHorizontal, LayoutGrid, List, BarChart } from 'lucide-react';
+import { ChevronRight, Share2, Star, MoreHorizontal, LayoutGrid, List, BarChart, Calendar } from 'lucide-react';
 
 interface BreadcrumbsProps {
   activeView: string;
-  setActiveView: (view: 'kanban' | 'list' | 'reports') => void;
+  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar') => void;
 }
 
 const NavHeader = ({ activeView, setActiveView }: BreadcrumbsProps) => {
@@ -46,6 +46,13 @@ const NavHeader = ({ activeView, setActiveView }: BreadcrumbsProps) => {
           >
             <BarChart size={12} />
             Reports
+          </button>
+          <button 
+            onClick={() => setActiveView('calendar')}
+            className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${activeView === 'calendar' ? 'bg-zinc-800 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+          >
+            <Calendar size={12} />
+            Calendar
           </button>
         </div>
 

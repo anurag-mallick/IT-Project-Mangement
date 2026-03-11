@@ -1,4 +1,14 @@
 export type Priority = 'P0' | 'P1' | 'P2' | 'P3';
+
+export interface ChecklistItem {
+  id: number;
+  title: string;
+  isCompleted: boolean;
+  ticketId: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type TicketStatus = 'TODO' | 'IN_PROGRESS' | 'AWAITING_USER' | 'RESOLVED' | 'CLOSED';
 export type UserRole = 'ADMIN' | 'STAFF' | 'USER';
 
@@ -47,6 +57,8 @@ export interface Ticket {
   };
   comments?: Comment[];
   tasks?: Task[];
+  tags?: string[];
+  checklists?: ChecklistItem[];
   createdAt: string;
   updatedAt: string;
   slaBreachAt?: string;

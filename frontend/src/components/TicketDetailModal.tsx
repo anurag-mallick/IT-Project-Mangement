@@ -1,9 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Ticket, Comment as TicketComment, User, Priority } from '../types';
+import { Ticket, Comment as TicketComment, User, Priority, ChecklistItem } from '../types';
 import { X, Send, User as UserIcon, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { uploadAttachment } from '@/lib/storage';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface TicketDetailModalProps {
   ticket: Ticket | null;
@@ -41,12 +43,17 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
   const [localStatus, setLocalStatus] = useState('');
   const [localPriority, setLocalPriority] = useState<Priority>('P2');
   const [localAssignee, setLocalAssignee] = useState<string>('');
+  const [localTags, setLocalTags] = useState<string>('');
+  const [checklists, setChecklists] = useState<ChecklistItem[]>([]);
+  const [newChecklistTitle, setNewChecklistTitle] = useState('');
 
   useEffect(() => {
     if (isOpen && ticket) {
       setLocalStatus(ticket.status);
       setLocalPriority(ticket.priority);
       setLocalAssignee(ticket.assignedToId ? String(ticket.assignedToId) : '');
+      setLocalTags(ticket.tags ? ticket.tags.join(', ') : '');
+      setChecklists(ticket.checklists || []);
       fetchComments();
       fetchStaff();
     }
@@ -88,7 +95,8 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
         body: JSON.stringify({
           status: localStatus,
           priority: localPriority,
-          assignedToId: localAssignee ? parseInt(localAssignee) : null
+          assignedToId: localAssignee ? parseInt(localAssignee) : null,
+          tags: localTags.split(',').map(t => t.trim()).filter(Boolean)
         })
       });
       if (res.ok) {
@@ -99,6 +107,58 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
       console.error(e);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const addChecklistItem = async () => {
+    if (!newChecklistTitle.trim() || !ticket) return;
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}/checklists`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ title: newChecklistTitle })
+      });
+      if (res.ok) {
+        const item = await res.json();
+        setChecklists([...checklists, item]);
+        setNewChecklistTitle('');
+        onUpdate();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const toggleChecklist = async (id: number, isCompleted: boolean) => {
+    try {
+      setChecklists(checklists.map(c => c.id === id ? { ...c, isCompleted } : c));
+      const res = await fetch(`/api/checklists/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ isCompleted })
+      });
+      if (res.ok) onUpdate();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const deleteChecklist = async (id: number) => {
+    try {
+      setChecklists(checklists.filter(c => c.id !== id));
+      const res = await fetch(`/api/checklists/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) onUpdate();
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -135,14 +195,23 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
         <div className="p-6 border-b border-white/10 flex items-start justify-between">
           <div>
             <h2 className="text-xl font-bold">{ticket.title}</h2>
-            <div className="text-xs text-white/40 mt-1">Ticket #{ticket.id}</div>
+            <div className="flex items-center gap-3 text-xs text-white/40 mt-1">
+              <span>Ticket #{ticket.id}</span>
+              {ticket.slaBreachAt && (
+                <span className={`px-2 py-0.5 rounded font-medium ${new Date(ticket.slaBreachAt) < new Date() ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                  SLA: {new Date(ticket.slaBreachAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                </span>
+              )}
+            </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X className="w-5 h-5"/></button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
           <div className="space-y-4">
             <h3 className="text-xs uppercase tracking-widest text-white/40 font-bold">Description</h3>
-            <p className="text-sm text-white/80 whitespace-pre-wrap">{ticket.description}</p>
+            <div className="text-sm text-white/80 prose prose-invert prose-indigo max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{ticket.description}</ReactMarkdown>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-6 p-4 bg-white/5 rounded-xl border border-white/5">
             <div className="space-y-2">
@@ -163,6 +232,31 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
                 <option value="">Unassigned</option>
                 {staff.map(user => <option key={user.id} value={user.id}>{user.name || user.username}</option>)}
               </select>
+            </div>
+            
+            <div className="space-y-2 col-span-2">
+              <label className="text-xs text-white/40 font-bold">Tags (comma-separated)</label>
+              <input type="text" value={localTags} onChange={e => setLocalTags(e.target.value)} placeholder="e.g. frontend, bug, urgent" className="w-full bg-zinc-800 border-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500" />
+            </div>
+
+            <div className="space-y-3 col-span-2 pt-4 border-t border-white/5 mt-2">
+              <h4 className="text-xs text-white/40 font-bold uppercase tracking-widest">Sub-tasks / Checklist</h4>
+              <div className="space-y-2">
+                {checklists.map(item => (
+                  <div key={item.id} className="flex items-center gap-3 bg-zinc-800/50 p-2 rounded-lg group">
+                    <input type="checkbox" checked={item.isCompleted} onChange={(e) => toggleChecklist(item.id, e.target.checked)} className="rounded border-none/10 bg-zinc-700 text-indigo-500 w-4 h-4 cursor-pointer focus:ring-0" />
+                    <span className={`flex-1 text-sm transition-colors ${item.isCompleted ? 'text-white/40 line-through' : 'text-white/80'}`}>{item.title}</span>
+                    <button onClick={() => deleteChecklist(item.id)} className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/20 text-red-400 rounded transition-all">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {checklists.length === 0 && <p className="text-xs text-white/30 italic pb-2">No items in checklist yet.</p>}
+              </div>
+              <div className="flex gap-2">
+                <input type="text" value={newChecklistTitle} onChange={e => setNewChecklistTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addChecklistItem()} placeholder="Add a checklist item..." className="flex-1 bg-zinc-800 border-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500" />
+                <button onClick={addChecklistItem} disabled={!newChecklistTitle.trim()} className="bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-2 rounded-md text-sm font-bold disabled:opacity-50 transition-colors">Add</button>
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-4">
@@ -198,7 +292,9 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
                     <span className="text-sm font-bold text-indigo-400">{comment.authorName || comment.author?.name || 'System'}</span>
                     <span className="text-xs text-white/40">{new Date(comment.createdAt).toLocaleString()}</span>
                   </div>
-                  <p className="text-sm text-white/80">{comment.content}</p>
+                  <div className="text-sm text-white/80 prose prose-invert prose-p:leading-snug prose-a:text-indigo-400 prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.content}</ReactMarkdown>
+                  </div>
                 </div>
               ))}
             </div>

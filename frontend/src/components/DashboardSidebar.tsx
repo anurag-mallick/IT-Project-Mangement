@@ -4,13 +4,13 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutGrid, List, BarChart, Users, LogOut,
   ChevronDown, ChevronRight, Hash, Shield, Database, 
-  Plus, Search, Inbox, ExternalLink
+  Plus, Search, Inbox, ExternalLink, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SidebarProps {
   activeView: string;
-  setActiveView: (view: 'kanban' | 'list' | 'reports') => void;
+  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar') => void;
   onNewTicket: () => void;
 }
 
@@ -21,6 +21,7 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
   const navItems = [
     { id: 'kanban', label: 'Board', icon: LayoutGrid },
     { id: 'list',   label: 'List',  icon: List },
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'reports',label: 'Reports', icon: BarChart },
   ];
 
@@ -114,6 +115,7 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
               {[
                 { id: 'it',     name: 'IT Operations',    color: 'bg-indigo-500', icon: Shield,   view: 'kanban' },
                 { id: 'list',   name: 'List View',         color: 'bg-emerald-500',icon: List,     view: 'list' },
+                { id: 'calendar', name: 'Calendar', color: 'bg-purple-500', icon: Calendar, view: 'calendar' },
                 { id: 'report', name: 'Analytics',         color: 'bg-orange-500', icon: BarChart, view: 'reports' },
               ].map(space => (
                 <button
