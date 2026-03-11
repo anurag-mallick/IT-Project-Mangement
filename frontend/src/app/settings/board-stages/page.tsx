@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Trash, AlertCircle, Columns, Loader2 } from 'lucide-react';
+import { Plus, Trash, AlertCircle, Columns, Loader2, Edit2, Check, X } from 'lucide-react';
 
 interface KanbanColumn {
   id: number;
@@ -16,6 +16,8 @@ export default function BoardStagesSettings() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
 
   useEffect(() => {
     fetchColumns();
@@ -84,6 +86,34 @@ export default function BoardStagesSettings() {
     }
   };
 
+  const startEdit = (col: KanbanColumn) => {
+    setEditingId(col.id);
+    setEditingTitle(col.title);
+  };
+
+  const saveEdit = async (id: number) => {
+    if (!editingTitle.trim()) return;
+    try {
+      const res = await fetch(`/api/kanban-columns/${id}`, {
+        method: "PUT",
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ title: editingTitle })
+      });
+      if (res.ok) {
+        setEditingId(null);
+        await fetchColumns();
+      } else {
+        const body = await res.json();
+        setError(body.error || "Failed to update stage");
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const moveUp = async (index: number) => {
     if (index === 0) return;
     const newCols = [...columns];
@@ -145,10 +175,34 @@ export default function BoardStagesSettings() {
           {columns.length === 0 && <p className="text-sm text-white/40 italic py-4">No custom stages found.</p>}
           {columns.map((col, idx) => (
             <div key={col.id} className="flex items-center justify-between bg-zinc-900 border border-white/10 p-4 rounded-xl group transition-all hover:border-indigo-500/30">
-              <span className="font-bold tracking-wide text-white/90">{col.title}</span>
+              {editingId === col.id ? (
+                <div className="flex items-center gap-2 flex-1 mr-4">
+                  <input 
+                    type="text" 
+                    value={editingTitle} 
+                    onChange={e => setEditingTitle(e.target.value)}
+                    className="flex-1 bg-zinc-800 border-none rounded px-3 py-1 text-sm focus:ring-1 focus:ring-indigo-500 text-white"
+                    autoFocus
+                  />
+                  <button onClick={() => saveEdit(col.id)} className="p-1.5 text-green-400 hover:bg-green-400/20 rounded">
+                    <Check size={16} />
+                  </button>
+                  <button onClick={() => setEditingId(null)} className="p-1.5 text-zinc-400 hover:bg-zinc-700/50 rounded">
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <span className="font-bold tracking-wide text-white/90">{col.title}</span>
+              )}
               
-              {user?.role === 'ADMIN' && (
-                <div className="flex items-center gap-2 opacity-30 group-hover:opacity-100 transition-opacity">
+              {user?.role === 'ADMIN' && editingId !== col.id && (
+                <div className="flex items-center gap-1 opacity-30 group-hover:opacity-100 transition-opacity">
+                  <button 
+                    onClick={() => startEdit(col)} 
+                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/70"
+                  >
+                    <Edit2 size={16} />
+                  </button>
                   <button 
                     onClick={() => moveUp(idx)} 
                     disabled={idx === 0} 

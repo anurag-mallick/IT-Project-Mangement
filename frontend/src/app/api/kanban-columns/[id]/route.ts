@@ -9,20 +9,20 @@ export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { pa
   
   try {
     const { id } = await params;
-    const { name } = await req.json();
+    const { title } = await req.json();
     
-    if (!name?.trim()) {
-      return NextResponse.json({ error: 'Folder name is required' }, { status: 400 });
+    if (!title?.trim()) {
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    const folder = await prisma.folder.findUnique({ where: { id: parseInt(id) } });
-    if (!folder) {
-      return NextResponse.json({ error: 'Folder not found' }, { status: 404 });
+    const col = await prisma.kanbanColumn.findUnique({ where: { id: parseInt(id) } });
+    if (!col) {
+      return NextResponse.json({ error: 'Column not found' }, { status: 404 });
     }
 
-    const updated = await prisma.folder.update({
+    const updated = await prisma.kanbanColumn.update({
       where: { id: parseInt(id) },
-      data: { name: name.trim() }
+      data: { title: title.trim().toUpperCase().replace(/ /g, '_') }
     });
     
     return NextResponse.json(updated);
@@ -39,12 +39,12 @@ export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: {
   try {
     const { id } = await params;
     
-    const folder = await prisma.folder.findUnique({ where: { id: parseInt(id) } });
-    if (!folder) {
-      return NextResponse.json({ error: 'Folder not found' }, { status: 404 });
+    const col = await prisma.kanbanColumn.findUnique({ where: { id: parseInt(id) } });
+    if (!col) {
+      return NextResponse.json({ error: 'Column not found' }, { status: 404 });
     }
 
-    await prisma.folder.delete({
+    await prisma.kanbanColumn.delete({
       where: { id: parseInt(id) }
     });
     

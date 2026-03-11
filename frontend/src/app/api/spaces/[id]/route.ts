@@ -9,20 +9,23 @@ export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { pa
   
   try {
     const { id } = await params;
-    const { name } = await req.json();
+    const { name, description } = await req.json();
     
     if (!name?.trim()) {
-      return NextResponse.json({ error: 'Folder name is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Space name is required' }, { status: 400 });
     }
 
-    const folder = await prisma.folder.findUnique({ where: { id: parseInt(id) } });
-    if (!folder) {
-      return NextResponse.json({ error: 'Folder not found' }, { status: 404 });
+    const space = await prisma.space.findUnique({ where: { id: parseInt(id) } });
+    if (!space) {
+      return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
 
-    const updated = await prisma.folder.update({
+    const updated = await prisma.space.update({
       where: { id: parseInt(id) },
-      data: { name: name.trim() }
+      data: {
+        name: name.trim(),
+        description: description?.trim() || null
+      }
     });
     
     return NextResponse.json(updated);
@@ -39,12 +42,12 @@ export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: {
   try {
     const { id } = await params;
     
-    const folder = await prisma.folder.findUnique({ where: { id: parseInt(id) } });
-    if (!folder) {
-      return NextResponse.json({ error: 'Folder not found' }, { status: 404 });
+    const space = await prisma.space.findUnique({ where: { id: parseInt(id) } });
+    if (!space) {
+      return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
 
-    await prisma.folder.delete({
+    await prisma.space.delete({
       where: { id: parseInt(id) }
     });
     

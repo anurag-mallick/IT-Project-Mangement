@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Plus, Trash2, Folder as FolderIcon, LayoutDashboard, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Folder as FolderIcon, LayoutDashboard, Loader2, AlertCircle, Edit2, Check, X } from 'lucide-react';
 
 interface Folder {
   id: number;
@@ -25,6 +25,14 @@ export default function SpacesSettingsPage() {
   const [newSpaceName, setNewSpaceName] = useState('');
   const [newSpaceDesc, setNewSpaceDesc] = useState('');
   const [newFolderNames, setNewFolderNames] = useState<Record<number, string>>({});
+  
+  // Edit State
+  const [editingSpaceId, setEditingSpaceId] = useState<number | null>(null);
+  const [editSpaceName, setEditSpaceName] = useState('');
+  const [editSpaceDesc, setEditSpaceDesc] = useState('');
+
+  const [editingFolderId, setEditingFolderId] = useState<number | null>(null);
+  const [editFolderName, setEditFolderName] = useState('');
 
   useEffect(() => {
     fetchSpaces();
@@ -105,6 +113,51 @@ export default function SpacesSettingsPage() {
     }
   };
 
+  const startSpaceEdit = (space: Space) => {
+    setEditingSpaceId(space.id);
+    setEditSpaceName(space.name);
+    setEditSpaceDesc(space.description || '');
+  };
+
+  const saveSpaceEdit = async (id: number) => {
+    if (!editSpaceName.trim()) return;
+    try {
+      const res = await fetch(`/api/spaces/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: editSpaceName, description: editSpaceDesc })
+      });
+      if (res.ok) {
+        setEditingSpaceId(null);
+        fetchSpaces();
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const startFolderEdit = (folder: Folder) => {
+    setEditingFolderId(folder.id);
+    setEditFolderName(folder.name);
+  };
+
+  const saveFolderEdit = async (id: number) => {
+    if (!editFolderName.trim()) return;
+    try {
+      const res = await fetch(`/api/folders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: editFolderName })
+      });
+      if (res.ok) {
+        setEditingFolderId(null);
+        fetchSpaces();
+      }
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-indigo-500" /></div>;
 
   return (
@@ -126,16 +179,34 @@ export default function SpacesSettingsPage() {
         {spaces.map(space => (
           <div key={space.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-lg shadow-black/20">
             {/* Space Header */}
-            <div className="p-6 bg-white/[0.02] border-b border-white/5 flex items-start justify-between">
-              <div className="flex items-center gap-4">
+            <div className="p-6 bg-white/[0.02] border-b border-white/5 flex items-start justify-between group">
+              <div className="flex items-center gap-4 flex-1">
                 <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl">
                   <LayoutDashboard size={24} />
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white tracking-wide">{space.name}</h3>
-                  <p className="text-sm text-white/50">{space.description || 'No description provided.'}</p>
-                </div>
+                {editingSpaceId === space.id ? (
+                  <div className="flex-1 space-y-2 max-w-md">
+                    <input type="text" value={editSpaceName} onChange={e => setEditSpaceName(e.target.value)} className="w-full bg-zinc-800 border-none rounded px-3 py-1 text-sm focus:ring-1 focus:ring-indigo-500 text-white font-bold" />
+                    <input type="text" value={editSpaceDesc} onChange={e => setEditSpaceDesc(e.target.value)} className="w-full bg-zinc-800 border-none rounded px-3 py-1 text-sm focus:ring-1 focus:ring-indigo-500 text-white/70" placeholder="Description" />
+                    <div className="flex gap-2">
+                      <button onClick={() => saveSpaceEdit(space.id)} className="text-xs bg-green-500 hover:bg-green-400 text-white px-3 py-1 rounded">Save</button>
+                      <button onClick={() => setEditingSpaceId(null)} className="text-xs bg-zinc-700 hover:bg-zinc-600 text-white px-3 py-1 rounded">Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-lg font-bold text-white tracking-wide">{space.name}</h3>
+                    <p className="text-sm text-white/50">{space.description || 'No description provided.'}</p>
+                  </div>
+                )}
               </div>
+              {user?.role === 'ADMIN' && editingSpaceId !== space.id && (
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                  <button onClick={() => startSpaceEdit(space)} className="p-2 hover:bg-white/10 text-white/50 hover:text-white rounded-lg transition-colors">
+                    <Edit2 size={18} />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Folders List */}
@@ -145,14 +216,27 @@ export default function SpacesSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {space.folders.map(folder => (
                   <div key={folder.id} className="group flex items-center justify-between bg-zinc-900 border border-white/10 p-4 rounded-xl hover:border-indigo-500/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <FolderIcon size={18} className="text-indigo-400/50" />
-                      <span className="font-semibold text-white/90">{folder.name}</span>
-                    </div>
-                    {user?.role === 'ADMIN' && (
-                      <button onClick={() => deleteFolder(folder.id)} className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-all">
-                        <Trash2 size={16} />
-                      </button>
+                    {editingFolderId === folder.id ? (
+                      <div className="flex items-center gap-2 flex-1">
+                        <input type="text" value={editFolderName} onChange={e => setEditFolderName(e.target.value)} className="w-full bg-zinc-800 border-none rounded px-3 py-1 text-sm focus:ring-1 focus:ring-indigo-500 text-white" autoFocus />
+                        <button onClick={() => saveFolderEdit(folder.id)} className="p-1 text-green-400 hover:bg-green-400/20 rounded"><Check size={16} /></button>
+                        <button onClick={() => setEditingFolderId(null)} className="p-1 text-zinc-400 hover:bg-zinc-700/50 rounded"><X size={16} /></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <FolderIcon size={18} className="text-indigo-400/50" />
+                        <span className="font-semibold text-white/90">{folder.name}</span>
+                      </div>
+                    )}
+                    {user?.role === 'ADMIN' && editingFolderId !== folder.id && (
+                      <div className="opacity-0 group-hover:opacity-100 flex gap-1">
+                        <button onClick={() => startFolderEdit(folder)} className="p-2 hover:bg-white/10 text-white/70 rounded-lg transition-colors">
+                          <Edit2 size={16} />
+                        </button>
+                        <button onClick={() => deleteFolder(folder.id)} className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     )}
                   </div>
                 ))}
