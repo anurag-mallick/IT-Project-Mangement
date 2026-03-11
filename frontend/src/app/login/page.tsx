@@ -24,7 +24,7 @@ const LoginPage = () => {
       if (sbError) {
         setError(sbError.message);
       } else if (data.session && data.user) {
-        login(data.session.access_token, data.user as any);
+        login(data.session.access_token, data.user as { id: string; name?: string; role: string; username?: string });
       } else {
         setError('Login failed. Please check your credentials.');
       }

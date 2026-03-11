@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutGrid, List, BarChart, Users, LogOut,
-  ChevronDown, ChevronRight, Hash, Shield, Database, 
-  Plus, Search, Inbox, ExternalLink, Calendar, Github, Linkedin, Cpu
+  ChevronDown, ChevronRight, Shield, Database, 
+  Plus, ExternalLink, Calendar, Github, Linkedin, Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -58,7 +58,7 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
         {navItems.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => setActiveView(id as any)}
+            onClick={() => setActiveView(id as 'kanban' | 'list' | 'reports' | 'calendar')}
             className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
               activeView === id
                 ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner shadow-blue-500/5'
@@ -126,7 +126,7 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
               ].map(space => (
                 <button
                   key={space.id}
-                  onClick={() => setActiveView(space.view as any)}
+                  onClick={() => setActiveView(space.view as 'kanban' | 'list' | 'reports' | 'calendar')}
                   className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer ${
                     activeView === space.view ? 'text-white bg-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'
                   }`}
@@ -144,7 +144,7 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
       {/* Development Branding & User Links */}
       <div className="px-4 py-4 flex flex-col items-center gap-4 bg-white/[0.02]">
         <div className="flex flex-col items-center gap-1.5">
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20">Developed by Anurag Mallick</span>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-white/20 text-center">Developed by <br/> Anurag Mallick</span>
           <div className="flex items-center gap-4">
             <a 
               href="https://github.com/anurag-mallick" 
