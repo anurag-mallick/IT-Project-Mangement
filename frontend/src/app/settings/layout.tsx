@@ -2,11 +2,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Columns, FolderTree, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Columns, FolderTree, Shield, Settings as SettingsIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
 const SETTINGS_NAVIGATION = [
   { name: 'General', href: '/settings', icon: SettingsIcon },
+  { name: 'Security', href: '/settings/security', icon: Shield },
   { name: 'Spaces & Folders', href: '/settings/spaces', icon: FolderTree },
   { name: 'Board Stages', href: '/settings/board-stages', icon: Columns },
   { name: 'User Management', href: '/settings/users', icon: Users, adminOnly: true },
@@ -22,8 +23,8 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       {/* Settings Sidebar */}
       <aside className="w-64 border-r border-white/5 bg-zinc-950/50 flex flex-col pt-6">
         <div className="px-6 mb-8 group cursor-pointer">
-          <Link href="/dashboard" className="flex items-center gap-2 group-hover:bg-white/5 p-2 rounded-lg transition-colors -ml-2">
-            <LayoutDashboard size={20} className="text-indigo-500" />
+          <Link href="/" className="flex items-center gap-2 group-hover:bg-white/5 p-2 rounded-lg transition-colors -ml-2">
+            <LayoutDashboard size={20} className="text-blue-500" />
             <span className="font-bold tracking-tight text-white/90">Back to Board</span>
           </Link>
         </div>
@@ -43,11 +44,11 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
                   ${isActive 
-                    ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 shadow-inner' 
+                    ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-inner' 
                     : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'}
                 `}
               >
-                <Icon size={18} className={isActive ? 'text-indigo-400' : 'text-white/40 group-hover:text-white'} />
+                <Icon size={18} className={isActive ? 'text-blue-400' : 'text-white/40 group-hover:text-white'} />
                 {item.name}
               </Link>
             );
