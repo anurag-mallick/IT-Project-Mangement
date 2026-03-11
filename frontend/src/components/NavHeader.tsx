@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from 'react';
-import { ChevronRight, Share2, Star, MoreHorizontal, LayoutGrid, List, BarChart, Calendar } from 'lucide-react';
-import CustomizeStagesModal from './CustomizeStagesModal';
+import React from 'react';
+import { ChevronRight, Share2, Star, MoreHorizontal, LayoutGrid, List, BarChart, Calendar, Settings } from 'lucide-react';
+import Link from 'next/link';
 
 interface BreadcrumbsProps {
   activeView: string;
@@ -9,8 +9,6 @@ interface BreadcrumbsProps {
 }
 
 const NavHeader = ({ activeView, setActiveView }: BreadcrumbsProps) => {
-  const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
-
   return (
     <header className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-zinc-950/20 backdrop-blur-sm sticky top-0 z-40">
       {/* Breadcrumbs */}
@@ -62,20 +60,15 @@ const NavHeader = ({ activeView, setActiveView }: BreadcrumbsProps) => {
         <div className="flex items-center gap-3 border-l border-white/10 pl-6 text-white/40">
           <Share2 size={16} className="hover:text-white cursor-pointer" />
           <MoreHorizontal size={18} className="hover:text-white cursor-pointer" />
-          <button 
-            onClick={() => setIsCustomizeOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold uppercase tracking-wider px-4 py-1.5 rounded transition-all shadow-lg shadow-indigo-600/10 active:scale-[0.98]"
+          <Link 
+            href="/settings"
+            className="flex items-center gap-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded transition-all active:scale-[0.98]"
           >
-            Customize
-          </button>
+            <Settings size={14} />
+            Settings
+          </Link>
         </div>
       </div>
-
-      <CustomizeStagesModal 
-        isOpen={isCustomizeOpen} 
-        onClose={() => setIsCustomizeOpen(false)} 
-        onUpdate={() => window.location.reload()} 
-      />
     </header>
   );
 };

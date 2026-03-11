@@ -40,6 +40,8 @@ model Ticket {
   slaBreachAt   DateTime?
   dueDate       DateTime?
   timeSpent     Int          @default(0)
+  folder        Folder?      @relation(fields: [folderId], references: [id])
+  folderId      Int?
   tags          String[]
   tasks         Task[]
   checklists    ChecklistItem[]
@@ -136,3 +138,21 @@ model KanbanColumn {
   updatedAt DateTime @updatedAt
 }
 
+model Space {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  folders     Folder[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Folder {
+  id          Int      @id @default(autoincrement())
+  name        String
+  space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  spaceId     Int
+  tickets     Ticket[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

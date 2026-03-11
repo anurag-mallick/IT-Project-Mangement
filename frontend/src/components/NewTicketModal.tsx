@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { X, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Upload } from 'lucide-react';
 import { TicketStatus, Priority, User } from '../types';
+import { uploadAttachment } from '@/lib/storage';
 
 interface NewTicketModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [staff, setStaff] = useState<User[]>([]);
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [formData, setFormData] = useState<{
     title: string;
     description: string;
@@ -44,6 +46,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
   useEffect(() => {
     if (isOpen) {
       setError('');
+      setAttachment(null);
       setFormData({ title: '', description: '', priority: 'P2', status: 'TODO', assignedToId: '', tags: '', dueDate: '' });
       fetch('/api/users', {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -81,6 +84,17 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
       });
 
       if (res.ok) {
+        const newTicket = await res.json();
+        
+        // Upload attachment if present
+        if (attachment) {
+          try {
+            await uploadAttachment(newTicket.id, attachment);
+          } catch (uploadErr) {
+            console.error("Failed to upload attachment during creation", uploadErr);
+          }
+        }
+        
         onSuccess();
         onClose();
         return;
@@ -202,6 +216,19 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
               placeholder="Describe the problem or task in detail..."
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors resize-none"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1 block">Attachment (Optional)</label>
+            <label className="flex items-center gap-2 cursor-pointer w-full bg-white/5 border border-white/10 border-dashed rounded-lg px-4 py-3 text-sm text-white/60 hover:text-white hover:bg-white/10 transition-colors">
+              <Upload size={16} />
+              {attachment ? attachment.name : 'Click to select a file'}
+              <input 
+                type="file" 
+                className="hidden" 
+                onChange={e => setAttachment(e.target.files ? e.target.files[0] : null)}
+              />
+            </label>
           </div>
 
           <button 
