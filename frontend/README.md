@@ -1,89 +1,36 @@
-# 🛠️ IT-Project-Management
+# 🚀 Horizon IT – Project Frontend
 
-A premium, enterprise-grade IT Management and Helpdesk solution. Designed for velocity, transparency, and advanced operations.
+This directory contains the Next.js frontend for the **Horizon IT** management suite.
 
-[![Deployment Status](https://img.shields.io/badge/Deployment-Vercel-success)](https://it-project-mangement.vercel.app)
-[![Tech Stack](https://img.shields.io/badge/Stack-Next.js%20%7C%20Supabase%20%7C%20Prisma-blue)](https://nextjs.org/)
+## 🏗️ Technical Architecture
 
----
+- **Framework**: Next.js 15 (App Router)
+- **Styling**: Tailwind CSS v4 + Vanilla CSS for custom Glassmorphism effects.
+- **State Management**: React Context API for Authentication.
+- **Realtime**: Supabase JS Client for live ticket subscriptions.
+- **Icons**: Lucide React.
+- **Type Safety**: TypeScript 5.x.
 
-## 🌟 Core Pillars
+## 📁 Key Directories
 
-### 📋 Enterprise Ticket Management
-- **Omni-channel Tracking**: Manage bugs, service requests, and hardware issues in one unified interface.
-- **Hierarchical Organization**: Use **Spaces** and **Folders** to partition tickets by department (e.g., Engineering vs. HR) and project types.
-- **Dynamic Kanban**: Fully customizable boards with drag-and-drop movement across user-defined stages.
-- **Rich Context**: Support for markdown descriptions, threaded comments, file attachments, and granular sub-task checklists.
+- `src/app`: Page components and API routes (Next.js App Router).
+- `src/components`: UI components (Kanban, List, Modals, ITAM cards).
+- `src/context`: Authentication and global state providers.
+- `src/lib`: Shared utility functions (Supabase client, search helpers).
+- `src/types`: Centralized TypeScript interfaces.
 
-### 🖥️ IT Asset Management (ITAM)
-- **Lifecycle Inventory**: Track hardware (laptops, servers, peripherals) and software licenses.
-- **Operational Linkage**: Directly link assets to support tickets to provide support staff with instant technical specs, warranty info, and assignment history.
-- **Assignee Relationships**: Monitor which equipment is checked out to which user in real-time.
+## 🛠️ Local Development
 
-### ⚡ Advanced Rule Engine
-- **Visual Automation Builder**: Define "If This, Then That" logic without code to eliminate manual triage.
-- **Smart Routing**: Automatically assign high-priority tickets to admin staff or escalate "Critical" issues based on triggers.
-- **Workflow Triggers**: Automations fire on ticket creation or update, ensuring your helpdesk is always one step ahead.
+1.  **Configure Environment**: Ensure you have a `.env.local` file with Supabase and Database credentials (see root README for details).
+2.  **Install Dependencies**: `npm install`
+3.  **Launch**: `npm run dev`
 
-### ⏱️ SLA & Compliance
-- **Automated SLA Tracking**: Multi-tier SLA policies (P0-P3) with visual "Breach" indicators.
-- **Audit Trails**: Complete activity logging for every status change, priority shift, or assignment update.
+## 🎨 Design Principles
 
----
-
-## 🎨 Premium Experience
-- **Glassmorphic Design**: A stunning, modern interface utilizing mesh gradients, backdrop blurs, and vibrant accent colors.
-- **Real-time Sync**: Live updates across all client instances via Supabase Realtime—tasks move and update instantly without refreshing.
-- **Admin Command Center**: A dedicated settings suite for managing users, organization structure, and board parameters.
+The Horizon IT interface follows a **Premium Dark** aesthetic:
+- **Glassmorphism**: Backdrop blurs and semi-transparent layers for depth.
+- **Fluid Motion**: Framer Motion for non-blocking transitions.
+- **Unified Search**: Instant, cross-module discovery via the global NavHeader.
 
 ---
-
-## 🛠️ Tech Stack
-
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router & Turbopack)
-- **Database**: [Supabase PostgreSQL](https://supabase.com/)
-- **ORM**: [Prisma](https://www.prisma.io/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + Vanilla CSS (Glassmorphism)
-- **Interactions**: [@hello-pangea/dnd](https://github.com/hello-pangea/dnd), Framer Motion, Lucide Icons
-
----
-
-## 🚀 Quick Start
-
-### 1. Prerequisites
-- **Node.js** (v18.0.0 or higher)
-- **Supabase Account** with a provisioned project
-
-### 2. Configure Environment
-Create a `.env` file in the `frontend` directory:
-
-```env
-DATABASE_URL="postgresql://postgres.[ID]:[PWD]@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.[ID]:[PWD]@aws-0-eu-central-1.pooler.supabase.com:5432/postgres"
-NEXT_PUBLIC_SUPABASE_URL="https://[ID].supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="[KEY]"
-```
-
-### 3. Initialize & Launch
-```bash
-# Install dependencies
-npm install
-
-# Sync database schema
-npx prisma db push
-
-# Launch development server
-npm run dev
-```
-
----
-
-## 🌐 Live URL & Access
-
-**Live Dashboard**: [it-project-mangement.vercel.app](https://it-project-mangement.vercel.app)
-
-> **Note**: For initial access, use the pre-configured admin credentials provided in the walkthrough or create a custom staff user via the portal.
-
----
-
-*Generated by [Antigravity](https://github.com/google/antigravity)*
+For the full system setup and backend configuration, please refer to the **[Root README](../README.md)**.

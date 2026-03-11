@@ -8,7 +8,11 @@ import { Ticket, TicketStatus } from "@/types";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Loader2 } from "lucide-react";
 
-const KanbanBoard = () => {
+interface KanbanProps {
+  searchQuery?: string;
+}
+
+const KanbanBoard = ({ searchQuery = "" }: KanbanProps) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -133,6 +137,17 @@ const KanbanBoard = () => {
     moveTicket(ticketId, newStatus as TicketStatus);
   };
 
+  const filteredTickets = tickets.filter((t) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.title.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q) ||
+      t.requesterName?.toLowerCase().includes(q) ||
+      t.id.toString().includes(q)
+    );
+  });
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="flex h-full w-full overflow-x-auto gap-4 p-4 pb-8">
@@ -144,7 +159,7 @@ const KanbanBoard = () => {
             <div className="p-4 border-b border-white/5 flex items-center justify-between">
               <h3 className="font-bold text-sm">{col.title}</h3>
               <span className="bg-white/10 text-xs px-2 py-1 rounded-md">
-                {tickets.filter((t) => t.status === col.title).length}
+                {filteredTickets.filter((t) => t.status === col.title).length}
               </span>
             </div>
 
@@ -160,7 +175,7 @@ const KanbanBoard = () => {
                       <Loader2 className="w-5 h-5 animate-spin text-white/20" />
                     </div>
                   ) : (
-                    tickets
+                    filteredTickets
                       .filter((t) => t.status === col.title)
                       .map((ticket, index) => (
                         <Draggable key={ticket.id} draggableId={ticket.id.toString()} index={index}>

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import KanbanBoard from '@/components/KanbanBoard';
 import ListBoard from '@/components/ListBoard';
 import ReportsView from '@/components/ReportsView';
@@ -13,6 +13,8 @@ const Dashboard = () => {
   const [activeView, setActiveView] = useState<'kanban' | 'list' | 'reports' | 'calendar'>('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  
   const handleTicketCreated = () => setRefreshKey(k => k + 1);
 
   return (
@@ -25,11 +27,16 @@ const Dashboard = () => {
         />
         
         <main className="flex-1 overflow-y-auto flex flex-col">
-          <NavHeader activeView={activeView} setActiveView={setActiveView} />
+          <NavHeader 
+            activeView={activeView} 
+            setActiveView={setActiveView} 
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+          />
           
           <div className="p-8 max-w-7xl mx-auto w-full">
-            {activeView === 'kanban' && <KanbanBoard key={refreshKey} />}
-            {activeView === 'list' && <ListBoard key={refreshKey} />}
+            {activeView === 'kanban' && <KanbanBoard key={`${refreshKey}-${searchQuery}`} searchQuery={searchQuery} />}
+            {activeView === 'list' && <ListBoard key={`${refreshKey}-${searchQuery}`} searchQuery={searchQuery} />}
             {activeView === 'reports' && <ReportsView />}
             {activeView === 'calendar' && <CalendarView key={refreshKey} />}
           </div>

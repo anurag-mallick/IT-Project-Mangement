@@ -24,7 +24,11 @@ const statusColors: Record<string, string> = {
   CLOSED:        'bg-zinc-600/30 text-zinc-400',
 };
 
-const ListBoard = () => {
+interface ListBoardProps {
+  searchQuery?: string;
+}
+
+const ListBoard = ({ searchQuery = "" }: ListBoardProps) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +68,17 @@ const ListBoard = () => {
     </div>
   );
 
+  const filteredTickets = tickets.filter((t) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.title.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q) ||
+      t.requesterName?.toLowerCase().includes(q) ||
+      t.id.toString().includes(q)
+    );
+  });
+
   return (
     <>
       <div className="glass-card overflow-hidden">
@@ -80,12 +95,12 @@ const ListBoard = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {tickets.length === 0 ? (
+            {filteredTickets.length === 0 ? (
               <tr>
                 <td colSpan={7} className="px-6 py-16 text-center text-white/20 text-sm">No tickets found</td>
               </tr>
             ) : (
-              tickets.map(ticket => (
+              filteredTickets.map(ticket => (
                 <tr
                   key={ticket.id}
                   className="hover:bg-white/5 transition-colors group cursor-pointer"

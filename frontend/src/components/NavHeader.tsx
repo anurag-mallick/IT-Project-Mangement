@@ -1,18 +1,20 @@
 "use client";
 import React from 'react';
-import { LayoutDashboard, Ticket as TicketIcon, Settings, Search, UserCircle, Bell, LogOut, Layout, Server, Zap, ChevronRight, Star, LayoutGrid, List, BarChart, Calendar } from 'lucide-react';
+import { Settings, Server, ChevronRight, Star, LayoutGrid, List, BarChart, Calendar, Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface BreadcrumbsProps {
   activeView: string;
   setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar') => void;
+  searchQuery?: string;
+  onSearchChange?: (val: string) => void;
 }
 
-const NavHeader = ({ activeView, setActiveView }: BreadcrumbsProps) => {
+const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange }: BreadcrumbsProps) => {
   return (
-    <header className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-zinc-950/20 backdrop-blur-sm sticky top-0 z-40">
+    <header className="h-14 border-b border-white/5 flex items-center justify-between px-6 bg-zinc-950/20 backdrop-blur-sm sticky top-0 z-40 gap-4">
       {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-2 text-sm flex-shrink-0">
         <span className="text-white/40 hover:text-white cursor-pointer transition-colors">Spaces</span>
         <ChevronRight size={14} className="text-white/20" />
         <span className="text-white/40 hover:text-white cursor-pointer transition-colors">IT Operations</span>
@@ -24,8 +26,24 @@ const NavHeader = ({ activeView, setActiveView }: BreadcrumbsProps) => {
         <Star size={14} className="text-white/20 hover:text-yellow-500 cursor-pointer transition-colors ml-2" />
       </div>
 
+      {/* Global Search */}
+      {onSearchChange !== undefined && (
+        <div className="flex-grow max-w-md mx-4">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 group-focus-within:text-indigo-400 transition-colors" />
+            <input 
+              type="text"
+              placeholder="Search across all tickets..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-1.5 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-indigo-500/50 focus:bg-white/10 transition-all"
+            />
+          </div>
+        </div>
+      )}
+
       {/* View Switcher & Actions */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 flex-shrink-0">
         <div className="flex items-center bg-white/5 p-1 rounded-md border border-white/5">
           <button 
             onClick={() => setActiveView('kanban')}
@@ -58,7 +76,7 @@ const NavHeader = ({ activeView, setActiveView }: BreadcrumbsProps) => {
         </div>
 
         <div className="flex items-center gap-3 border-l border-white/10 pl-6 text-white/40">
-          <Link href="/board" className="text-sm font-medium hover:text-white transition-colors">
+          <Link href="/" className="text-sm font-medium hover:text-white transition-colors">
             Board
           </Link>
           <Link href="/spaces" className="text-sm font-medium hover:text-white transition-colors">

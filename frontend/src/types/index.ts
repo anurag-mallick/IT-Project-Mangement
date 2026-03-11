@@ -43,6 +43,30 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface Asset {
+  id: number;
+  name: string;
+  type: string;
+  status: string;
+  description: string | null;
+  serialNumber: string | null;
+  manufacturer: string | null;
+  model: string | null;
+  location: string | null;
+  purchaseDate: string | null;
+  warrantyExpiry: string | null;
+  purchaseCost: number | null;
+  specs: any | null;
+  assignedTo?: {
+    id: number;
+    username: string;
+    name: string | null;
+  } | null;
+  assignedToId?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Ticket {
   id: number;
   title: string;
@@ -60,11 +84,7 @@ export interface Ticket {
   tags?: string[];
   checklists?: ChecklistItem[];
   assetId?: number | null;
-  asset?: {
-    id: number;
-    name: string;
-    type: string;
-  };
+  asset?: Asset;
   createdAt: string;
   updatedAt: string;
   dueDate?: string;

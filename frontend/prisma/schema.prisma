@@ -165,6 +165,14 @@ model Asset {
   type         String   // e.g., LAPTOP, DESKTOP, SERVER, SOFTWARE
   status       String   @default("ACTIVE") // e.g., ACTIVE, MAINTENANCE, RETIRED
   description  String?
+  serialNumber String?  @unique
+  manufacturer String?
+  model        String?
+  location     String?
+  purchaseDate DateTime?
+  warrantyExpiry DateTime?
+  purchaseCost Decimal?
+  specs        Json?    // For technical specs like RAM, CPU, License Keys
   assignedTo   User?    @relation(fields: [assignedToId], references: [id])
   assignedToId Int?
   tickets      Ticket[]
