@@ -30,6 +30,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
     status: TicketStatus;
     assignedToId: string;
     tags: string;
+    dueDate?: string;
   }>({
     title: '',
     description: '',
@@ -37,12 +38,13 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
     status: 'TODO',
     assignedToId: '',
     tags: '',
+    dueDate: '',
   });
 
   useEffect(() => {
     if (isOpen) {
       setError('');
-      setFormData({ title: '', description: '', priority: 'P2', status: 'TODO', assignedToId: '', tags: '' });
+      setFormData({ title: '', description: '', priority: 'P2', status: 'TODO', assignedToId: '', tags: '', dueDate: '' });
       fetch('/api/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
@@ -67,6 +69,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
         tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
       };
       if (formData.assignedToId) body.assignedToId = parseInt(formData.assignedToId);
+      if (formData.dueDate) body.dueDate = new Date(formData.dueDate).toISOString();
 
       const res = await fetch('/api/tickets', {
         method: 'POST',
@@ -176,6 +179,16 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
               onChange={(e) => setFormData({...formData, tags: e.target.value})}
               placeholder="e.g. bug, network, hardware"
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1 block">Due Date</label>
+            <input 
+              type="date" 
+              value={formData.dueDate}
+              onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors [color-scheme:dark]"
             />
           </div>
 

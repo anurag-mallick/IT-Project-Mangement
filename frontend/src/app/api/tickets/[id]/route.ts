@@ -9,7 +9,7 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
   try {
     const { id } = await params;
     const body = await req.json();
-    const { status, priority, title, description, assignedToId, tags } = body;
+    const { status, priority, title, description, assignedToId, tags, dueDate } = body;
 
     const currentTicket = await prisma.ticket.findUnique({
       where: { id: parseInt(id) }
@@ -24,6 +24,9 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
     }
     if (tags !== undefined) {
       data.tags = tags;
+    }
+    if (dueDate !== undefined) {
+      data.dueDate = dueDate ? new Date(dueDate).toISOString() : null;
     }
     if (priority !== undefined && priority !== currentTicket.priority) {
       // Re-calculate SLA if priority changed
@@ -48,6 +51,9 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
     }
     if (priority && priority !== currentTicket.priority) {
       changes.push(`priority from **${currentTicket.priority}** to **${priority}**`);
+    }
+    if (dueDate && new Date(dueDate).toISOString() !== currentTicket.dueDate?.toISOString()) {
+      changes.push(`due date to **${new Date(dueDate).toLocaleDateString()}**`);
     }
 
     if (changes.length > 0) {

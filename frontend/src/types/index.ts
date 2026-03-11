@@ -61,5 +61,6 @@ export interface Ticket {
   checklists?: ChecklistItem[];
   createdAt: string;
   updatedAt: string;
+  dueDate?: string;
   slaBreachAt?: string;
 }

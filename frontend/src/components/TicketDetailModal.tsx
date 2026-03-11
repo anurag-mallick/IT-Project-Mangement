@@ -44,6 +44,7 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
   const [localPriority, setLocalPriority] = useState<Priority>('P2');
   const [localAssignee, setLocalAssignee] = useState<string>('');
   const [localTags, setLocalTags] = useState<string>('');
+  const [localDueDate, setLocalDueDate] = useState<string>('');
   const [checklists, setChecklists] = useState<ChecklistItem[]>([]);
   const [newChecklistTitle, setNewChecklistTitle] = useState('');
 
@@ -53,6 +54,7 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
       setLocalPriority(ticket.priority);
       setLocalAssignee(ticket.assignedToId ? String(ticket.assignedToId) : '');
       setLocalTags(ticket.tags ? ticket.tags.join(', ') : '');
+      setLocalDueDate(ticket.dueDate ? ticket.dueDate.split('T')[0] : '');
       setChecklists(ticket.checklists || []);
       fetchComments();
       fetchStaff();
@@ -96,7 +98,8 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
           status: localStatus,
           priority: localPriority,
           assignedToId: localAssignee ? parseInt(localAssignee) : null,
-          tags: localTags.split(',').map(t => t.trim()).filter(Boolean)
+          tags: localTags.split(',').map(t => t.trim()).filter(Boolean),
+          dueDate: localDueDate || null
         })
       });
       if (res.ok) {
@@ -237,6 +240,11 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
             <div className="space-y-2 col-span-2">
               <label className="text-xs text-white/40 font-bold">Tags (comma-separated)</label>
               <input type="text" value={localTags} onChange={e => setLocalTags(e.target.value)} placeholder="e.g. frontend, bug, urgent" className="w-full bg-zinc-800 border-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500" />
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <label className="text-xs text-white/40 font-bold">Due Date</label>
+              <input type="date" value={localDueDate} onChange={e => setLocalDueDate(e.target.value)} className="w-full bg-zinc-800 border-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 [color-scheme:dark]" />
             </div>
 
             <div className="space-y-3 col-span-2 pt-4 border-t border-white/5 mt-2">
