@@ -168,4 +168,3 @@ npm run dev
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
-*Built with ❤️ for the Horizon IT Ecosystem*
