@@ -14,6 +14,7 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }: NewUserModalProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
+    email: '',
     password: '',
     name: '',
     role: 'STAFF'
@@ -66,6 +67,18 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }: NewUserModalProps) => {
               value={formData.name}
               onChange={(e) => setFormData({...formData, name: e.target.value})}
               placeholder="e.g. John Doe"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:border-indigo-500/50 outline-none"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Email Address</label>
+            <input 
+              required
+              type="email" 
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="user@company.com"
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:border-indigo-500/50 outline-none"
             />
           </div>

@@ -11,6 +11,7 @@ async function getUsersHandler() {
         id: true,
         name: true,
         username: true,
+        email: true,
         role: true,
         isActive: true,
         createdAt: true,
@@ -35,7 +36,8 @@ async function createUserHandler(req: NextRequest, user: any) {
     // Here we just insert into Prisma so the user shows up in the database list.
     const newUser = await prisma.user.create({
       data: {
-        username: data.username || data.email || 'user',
+        username: data.username || data.email?.split('@')[0] || 'user',
+        email: data.email,
         name: data.name || '',
         role: data.role || 'STAFF',
         password: data.password || '$2b$10$abcdefghijklmnopqrstuv', // Dummy hash

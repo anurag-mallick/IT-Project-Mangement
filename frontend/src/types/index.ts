@@ -15,6 +15,7 @@ export type UserRole = 'ADMIN' | 'STAFF' | 'USER';
 export interface User {
   id: number;
   username: string;
+  email: string;
   name: string;
   role: UserRole;
   isActive: boolean;

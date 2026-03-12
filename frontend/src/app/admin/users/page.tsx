@@ -61,6 +61,7 @@ const UserManagement = () => {
             <thead className="bg-white/5 text-white/60 border-b border-white/5 uppercase text-[10px] tracking-widest font-bold">
               <tr>
                 <th className="px-6 py-4">Full Name</th>
+                <th className="px-6 py-4">Email</th>
                 <th className="px-6 py-4">User ID</th>
                 <th className="px-6 py-4">Role</th>
                 <th className="px-6 py-4">Status</th>
@@ -71,7 +72,8 @@ const UserManagement = () => {
               {users.map(u => (
                 <tr key={u.id} className="hover:bg-white/2 transition-colors group">
                   <td className="px-6 py-4 font-medium">{u.name}</td>
-                  <td className="px-6 py-4 text-white/40">{u.username}</td>
+                  <td className="px-6 py-4 text-white/40">{u.email}</td>
+                  <td className="px-6 py-4 text-white/20 text-xs">{u.username}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tighter ${u.role === 'ADMIN' ? 'bg-orange-500/10 text-orange-400' : 'bg-blue-500/10 text-blue-400'}`}>
                       {u.role}

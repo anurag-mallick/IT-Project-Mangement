@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
+  // url       = env("DATABASE_URL")
 }
 
 // Role: ADMIN, STAFF
@@ -15,6 +15,7 @@ datasource db {
 model User {
   id           Int           @id @default(autoincrement())
   username     String        @unique
+  email        String        @unique
   password     String
   name         String?
   role         String        @default("STAFF")
