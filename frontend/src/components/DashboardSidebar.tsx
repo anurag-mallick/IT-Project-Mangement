@@ -4,7 +4,8 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutGrid, List, BarChart, Users, LogOut,
   ChevronDown, ChevronRight, Shield, Database, 
-  Plus, ExternalLink, Calendar, Github, Linkedin, Cpu
+  Plus, ExternalLink, Calendar, Github, Linkedin, Cpu,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -90,9 +91,16 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
           <ExternalLink size={14} className="text-emerald-500" />
           <span>Public Portal</span>
         </a>
+        <a
+          href="/settings"
+          className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all"
+        >
+          <SettingsIcon size={14} className="text-zinc-400" />
+          <span>Settings</span>
+        </a>
         {user?.role === 'ADMIN' && (
           <a
-            href="/admin/users"
+            href="/settings/users"
             className="w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all"
           >
             <Users size={14} className="text-purple-400" />

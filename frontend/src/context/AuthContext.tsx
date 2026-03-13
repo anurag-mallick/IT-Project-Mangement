@@ -18,29 +18,80 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+  const fetchProfile = React.useCallback(async (currentToken: string) => {
+    try {
+      const res = await fetch('/api/auth/profile', {
+        headers: { Authorization: `Bearer ${currentToken}` }
+      });
+      if (res.ok) {
+        const dbUser = await res.json();
+        setUser(dbUser);
+        localStorage.setItem('user', JSON.stringify(dbUser));
+        return dbUser;
+      }
+    } catch (err) {
+      console.error('Failed to fetch profile:', err);
     }
-    setIsLoading(false);
+    return null;
   }, []);
 
-  const login = (newToken: string, newUser: any) => {
+  useEffect(() => {
+    const initializeAuth = async () => {
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      
+      if (savedToken) {
+        setToken(savedToken);
+        
+        if (savedUser) {
+          try {
+            const parsedUser = JSON.parse(savedUser);
+            setUser(parsedUser);
+            
+            // If the saved user doesn't have a role, fetch it asynchronously
+            if (!parsedUser.role) {
+              await fetchProfile(savedToken);
+            }
+          } catch (e) {
+            console.error('Error parsing saved user:', e);
+            await fetchProfile(savedToken);
+          }
+        } else {
+          await fetchProfile(savedToken);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initializeAuth();
+  }, [fetchProfile]);
+
+  const login = async (newToken: string, supabaseUser: any) => {
     setToken(newToken);
-    setUser(newUser);
     localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    
+    const dbUser = await fetchProfile(newToken);
+    
+    if (!dbUser) {
+      setUser(supabaseUser);
+      localStorage.setItem('user', JSON.stringify(supabaseUser));
+    }
+    
     router.push('/');
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await import('@/lib/supabase').then(m => m.supabase.auth.signOut());
+    } catch (e) {
+      console.error('Supabase sign out error:', e);
+    }
+    
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.clear(); // Clear any other residual session data
     router.push('/login');
   };
 
