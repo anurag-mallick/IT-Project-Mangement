@@ -76,12 +76,6 @@ const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange }: B
         </div>
 
         <div className="flex items-center gap-3 border-l border-white/10 pl-6 text-white/40">
-          <Link href="/" className="text-sm font-medium hover:text-white transition-colors">
-            Board
-          </Link>
-          <Link href="/spaces" className="text-sm font-medium hover:text-white transition-colors">
-            Spaces
-          </Link>
           <Link href="/assets" className="text-sm font-medium hover:text-white transition-colors flex items-center gap-1.5">
             <Server className="w-4 h-4" />
             Assets

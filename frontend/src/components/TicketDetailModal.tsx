@@ -206,7 +206,33 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
     }
   };
 
+  const deleteTicket = async () => {
+    if (!ticket || !window.confirm("Are you sure you want to delete this ticket? This action cannot be undone.")) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        onUpdate();
+        onClose();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete ticket");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred while deleting the ticket.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!isOpen || !ticket) return null;
+
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm">
@@ -317,6 +343,15 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
               }} />
               Attach File
             </label>
+            {isAdmin && (
+              <button 
+                onClick={deleteTicket} 
+                disabled={saving} 
+                className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50 transition-all mr-auto"
+              >
+                Delete Ticket
+              </button>
+            )}
             <button onClick={saveTicket} disabled={saving} className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50">
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
