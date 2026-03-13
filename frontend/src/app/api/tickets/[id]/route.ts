@@ -125,3 +125,29 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
     return NextResponse.json({ error: 'Failed to update ticket' }, { status: 400 });
   }
 });
+export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
+  try {
+    const { id } = await params;
+    
+    // Check if user is Admin - we fetch from DB to be absolutely sure of the role
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { role: true }
+    });
+
+    if (dbUser?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden: Only admins can delete tickets' }, { status: 403 });
+    }
+
+    // Delete ticket - Cascade delete should handle logs/comments if configured in DB
+    // but we'll do it explicitly or ensure Prisma handles it
+    await prisma.ticket.delete({
+      where: { id: parseInt(id) }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Delete Error:", err);
+    return NextResponse.json({ error: 'Failed to delete ticket' }, { status: 400 });
+  }
+});

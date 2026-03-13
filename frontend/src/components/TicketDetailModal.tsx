@@ -179,8 +179,6 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
     } catch (e) {
       console.error(e);
     }
-  };
-
   const postComment = async () => {
     if (!newComment.trim() || !ticket) return;
     setLoading(true);
@@ -206,7 +204,33 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
     }
   };
 
+  const deleteTicket = async () => {
+    if (!ticket || !window.confirm("Are you sure you want to delete this ticket? This action cannot be undone.")) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.ok) {
+        onUpdate();
+        onClose();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete ticket");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred while deleting the ticket.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!isOpen || !ticket) return null;
+
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm">
@@ -257,12 +281,12 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
               <label className="text-xs text-white/40 font-bold">Tags (comma-separated)</label>
               <input type="text" value={localTags} onChange={e => setLocalTags(e.target.value)} placeholder="e.g. frontend, bug, urgent" className="w-full bg-zinc-800 border-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500" />
             </div>
-
+ 
             <div className="space-y-2 col-span-2">
               <label className="text-xs text-white/40 font-bold">Due Date</label>
               <input type="date" value={localDueDate} onChange={e => setLocalDueDate(e.target.value)} className="w-full bg-zinc-800 border-none rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 [color-scheme:dark]" />
             </div>
-
+ 
             {/* IT Asset Management Separation */}
             <div className="space-y-3 col-span-2 pt-4 border-t border-white/5 mt-2 bg-indigo-950/20 p-4 -mx-4 border-y border-indigo-500/10">
               <h4 className="text-xs text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-2">
@@ -277,7 +301,7 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
                 ))}
               </select>
             </div>
-
+ 
             <div className="space-y-3 col-span-2 pt-4 border-t border-white/5 mt-2">
               <h4 className="text-xs text-white/40 font-bold uppercase tracking-widest">Sub-tasks / Checklist</h4>
               <div className="space-y-2">
@@ -299,6 +323,15 @@ const TicketDetailModal = ({ ticket, isOpen, onClose, onUpdate }: TicketDetailMo
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-4">
+            {isAdmin && (
+              <button 
+                onClick={deleteTicket} 
+                disabled={saving} 
+                className="bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white border border-red-500/20 px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50 transition-all mr-auto"
+              >
+                Delete Ticket
+              </button>
+            )}
             <label className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer transition-colors flex items-center gap-2">
               <input type="file" className="hidden" onChange={async (e) => {
                 if (e.target.files && e.target.files[0] && ticket) {
