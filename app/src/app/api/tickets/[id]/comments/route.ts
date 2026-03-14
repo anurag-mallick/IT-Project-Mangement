@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export const POST = withAuth(async (req: NextRequest, user: any, { params }: { params: { id: string } }) => {
   try {
@@ -49,7 +49,7 @@ export const POST = withAuth(async (req: NextRequest, user: any, { params }: { p
       });
 
       // 3. Send Emails via Resend
-      if (process.env.RESEND_API_KEY && mentionedUsers.length > 0) {
+      if (process.env.RESEND_API_KEY && resend && mentionedUsers.length > 0) {
          try {
              // Send an email to each mentioned user
              const emailPromises = mentionedUsers.map(mentionedUser => {
