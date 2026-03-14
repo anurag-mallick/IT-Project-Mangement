@@ -11,19 +11,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface SidebarProps {
   activeView: string;
-  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar') => void;
+  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar' | 'intelligence') => void;
   onNewTicket: () => void;
 }
 
 const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const [spacesOpen, setSpacesOpen] = useState(true);
 
   const navItems = [
+    { id: 'intelligence', label: 'Dashboard', icon: BarChart },
     { id: 'kanban', label: 'Board', icon: LayoutGrid },
     { id: 'list',   label: 'List',  icon: List },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
-    { id: 'reports',label: 'Reports', icon: BarChart },
   ];
 
   return (
@@ -134,7 +134,7 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
               ].map(space => (
                 <button
                   key={space.id}
-                  onClick={() => setActiveView(space.view as 'kanban' | 'list' | 'reports' | 'calendar')}
+                  onClick={() => setActiveView(space.view as 'kanban' | 'list' | 'reports' | 'calendar' | 'intelligence')}
                   className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm transition-colors cursor-pointer ${
                     activeView === space.view ? 'text-white bg-white/5' : 'text-white/40 hover:text-white hover:bg-white/5'
                   }`}
@@ -187,7 +187,7 @@ const Sidebar = ({ activeView, setActiveView, onNewTicket }: SidebarProps) => {
             <span className="text-[9px] text-white/30 uppercase tracking-tighter">{user?.role}</span>
           </div>
         </div>
-        <button onClick={logout} className="text-white/20 hover:text-red-400 transition-colors p-1.5 rounded hover:bg-white/5">
+        <button onClick={signOut} className="text-white/20 hover:text-red-400 transition-colors p-1.5 rounded hover:bg-white/5">
           <LogOut size={14} />
         </button>
       </div>

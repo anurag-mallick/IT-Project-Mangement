@@ -2,10 +2,11 @@
 import React from 'react';
 import { Settings, Server, ChevronRight, Star, LayoutGrid, List, BarChart, Calendar, Search } from 'lucide-react';
 import Link from 'next/link';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 
 interface BreadcrumbsProps {
   activeView: string;
-  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar') => void;
+  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar' | 'intelligence') => void;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
 }
@@ -46,6 +47,13 @@ const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange }: B
       <div className="flex items-center gap-6 shrink-0">
         <div className="flex items-center bg-white/5 p-1 rounded-md border border-white/5">
           <button 
+            onClick={() => setActiveView('intelligence')}
+            className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${activeView === 'intelligence' ? 'bg-zinc-800 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+          >
+            <BarChart size={12} className="text-indigo-400" />
+            Intelligence
+          </button>
+          <button 
             onClick={() => setActiveView('kanban')}
             className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${activeView === 'kanban' ? 'bg-zinc-800 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
           >
@@ -60,13 +68,6 @@ const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange }: B
             List
           </button>
           <button 
-            onClick={() => setActiveView('reports')}
-            className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${activeView === 'reports' ? 'bg-zinc-800 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
-          >
-            <BarChart size={12} />
-            Reports
-          </button>
-          <button 
             onClick={() => setActiveView('calendar')}
             className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${activeView === 'calendar' ? 'bg-zinc-800 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
           >
@@ -76,7 +77,8 @@ const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange }: B
         </div>
 
         <div className="flex items-center gap-3 border-l border-white/10 pl-6 text-white/40">
-          <Link href="/assets" className="text-sm font-medium hover:text-white transition-colors flex items-center gap-1.5">
+          <NotificationCenter />
+          <Link href="/assets" className="text-sm font-medium hover:text-white transition-colors flex items-center gap-1.5 ml-2">
             <Server className="w-4 h-4" />
             Assets
           </Link>

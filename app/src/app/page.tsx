@@ -4,13 +4,14 @@ import KanbanBoard from '@/components/KanbanBoard';
 import ListBoard from '@/components/ListBoard';
 import ReportsView from '@/components/ReportsView';
 import CalendarView from '@/components/CalendarView';
+import IntelligenceDashboard from '@/components/IntelligenceDashboard';
 import Sidebar from '@/components/DashboardSidebar';
 import AuthGuard from '@/components/AuthGuard';
 import NavHeader from '@/components/NavHeader';
 import NewTicketModal from '@/components/NewTicketModal';
 
 const Dashboard = () => {
-  const [activeView, setActiveView] = useState<'kanban' | 'list' | 'reports' | 'calendar'>('kanban');
+  const [activeView, setActiveView] = useState<'kanban' | 'list' | 'reports' | 'calendar' | 'intelligence'>('intelligence');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,15 +22,15 @@ const Dashboard = () => {
     <AuthGuard>
       <div className="flex bg-zinc-950 min-h-screen text-white overflow-hidden">
         <Sidebar 
-          activeView={activeView} 
-          setActiveView={setActiveView} 
+          activeView={activeView as any} 
+          setActiveView={setActiveView as any} 
           onNewTicket={() => setIsModalOpen(true)}
         />
         
         <main className="flex-1 overflow-y-auto flex flex-col">
           <NavHeader 
-            activeView={activeView} 
-            setActiveView={setActiveView} 
+            activeView={activeView as any} 
+            setActiveView={setActiveView as any} 
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
           />
@@ -38,6 +39,7 @@ const Dashboard = () => {
             {activeView === 'kanban' && <KanbanBoard key={`${refreshKey}-${searchQuery}`} searchQuery={searchQuery} />}
             {activeView === 'list' && <ListBoard key={`${refreshKey}-${searchQuery}`} searchQuery={searchQuery} />}
             {activeView === 'reports' && <ReportsView />}
+            {activeView === 'intelligence' && <IntelligenceDashboard />}
             {activeView === 'calendar' && <CalendarView key={refreshKey} />}
           </div>
         </main>
