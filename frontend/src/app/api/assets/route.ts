@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
-export const GET = withAuth(async (req: NextRequest, { user }) => {
+export const GET = withAuth(async (req: NextRequest, user: any) => {
   try {
     const assets = await prisma.asset.findMany({
       include: {
@@ -20,7 +20,7 @@ export const GET = withAuth(async (req: NextRequest, { user }) => {
   }
 });
 
-export const POST = withAuth(async (req: NextRequest, { user }) => {
+export const POST = withAuth(async (req: NextRequest, user: any) => {
   if (user.role !== "ADMIN" && user.role !== "STAFF") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }

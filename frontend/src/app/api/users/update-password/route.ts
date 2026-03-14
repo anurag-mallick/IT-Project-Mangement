@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from '@prisma/client';
 import { withAuth } from "@/lib/auth";
 
 // API to update mirror password in public."User" table
@@ -14,11 +15,7 @@ async function updatePasswordHandler(req: NextRequest) {
     // For simplicity with the current Prisma setup, we'll execute raw SQL
     // to ensure the gen_salt and crypt functions are used correctly.
     
-    await prisma.$executeRawUnsafe(
-      `UPDATE public."User" SET password = crypt($1, gen_salt('bf')) WHERE username = $2`,
-      password,
-      email
-    );
+    await prisma.$executeRaw(Prisma.sql`UPDATE public."User" SET password = crypt(${password}, gen_salt('bf')) WHERE username = ${email}`);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

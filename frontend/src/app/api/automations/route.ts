@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
-export const GET = withAuth(async (req: NextRequest, { user }) => {
+export const GET = withAuth(async (req: NextRequest, user: any) => {
   if (user.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   try {
@@ -16,7 +16,7 @@ export const GET = withAuth(async (req: NextRequest, { user }) => {
   }
 });
 
-export const POST = withAuth(async (req: NextRequest, { user }) => {
+export const POST = withAuth(async (req: NextRequest, user: any) => {
   if (user.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   try {

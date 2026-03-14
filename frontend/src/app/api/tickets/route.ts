@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/auth';
 import { calculateSlaBreachTime } from '@/lib/sla';
 import { runAutomations } from '@/lib/automations';
 import { sendTicketEmail } from '@/lib/email';
+import { TicketStatus, TicketPriority } from '@prisma/client';
 
 export const GET = withAuth(async (req: NextRequest, user: any) => {
   try {
@@ -31,14 +32,18 @@ export const POST = withAuth(async (req: NextRequest, user: any) => {
       return NextResponse.json({ error: 'Title and description are required' }, { status: 400 });
     }
 
-    const slaBreachAt = await calculateSlaBreachTime(priority || 'P2');
+    // Validate priority and status against enums
+    const validatedPriority = (priority && Object.values(TicketPriority).includes(priority)) ? (priority as TicketPriority) : TicketPriority.P2;
+    const validatedStatus = (status && Object.values(TicketStatus).includes(status)) ? (status as TicketStatus) : TicketStatus.TODO;
+
+    const slaBreachAt = await calculateSlaBreachTime(validatedPriority);
 
     const ticket = await prisma.ticket.create({
       data: {
         title,
         description,
-        priority: priority || 'P2',
-        status: status || 'TODO',
+        priority: validatedPriority,
+        status: validatedStatus,
         assignedToId: assignedToId ? parseInt(assignedToId.toString()) : undefined,
         assetId: assetId ? parseInt(assetId.toString()) : undefined,
         tags: tags || [],
