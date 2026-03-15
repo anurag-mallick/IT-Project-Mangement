@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { createClient } from '@/lib/supabase/client';
 import TaskCard from "./TaskCard";
 import TicketDetailModal from "@/components/TicketDetailModal";
-import { Ticket, TicketStatus } from "@/types";
+import { Ticket, TicketStatus, User } from "@/types";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { Loader2 } from "lucide-react";
 
@@ -13,7 +13,7 @@ interface KanbanProps {
   assets?: any[];
 }
 
-const KanbanBoard = ({ searchQuery = "" }: KanbanProps) => {
+const KanbanBoard = ({ searchQuery = "", users, assets }: KanbanProps) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
