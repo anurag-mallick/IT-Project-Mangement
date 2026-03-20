@@ -4,10 +4,10 @@ import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
-// Fix 4: Add IP-based rate limiting (basic version for serverless)
-const recentIPs = new Map<string, number>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS = 5;
+/**
+ * Rate limiting should be handled at the infrastructure level (e.g., Vercel WAF, Upstash Redis, or Cloudflare).
+ * In-memory Map-based rate limiting does not work effectively in serverless environments 
+ */
 
 const TicketSchema = z.object({
   title: z.string().min(1).max(200),
@@ -18,19 +18,9 @@ const TicketSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // Basic IP rate limiting
-    const ip = req.headers.get('x-forwarded-for') || 'unknown';
-    const now = Date.now();
-    const lastRequest = recentIPs.get(ip) || 0;
-    
-    if (now - lastRequest < RATE_LIMIT_WINDOW / MAX_REQUESTS) {
-      return NextResponse.json({ error: 'Too many requests. Please wait.' }, { status: 429 });
-    }
-    recentIPs.set(ip, now);
-
     const body = await req.json();
     
-    // Fix 4: Zod validation
+    // Zod validation
     const result = TicketSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json({ error: 'Invalid input', details: result.error.format() }, { status: 400 });

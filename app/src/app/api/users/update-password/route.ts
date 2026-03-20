@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth } from "@/lib/auth";
+import { withAuth, SessionUser } from "@/lib/auth";
 import bcrypt from 'bcryptjs';
 
-async function updatePasswordHandler(req: NextRequest, user: any) {
+async function updatePasswordHandler(req: NextRequest, user: SessionUser) {
   try {
     const { password, currentPassword } = await req.json();
 

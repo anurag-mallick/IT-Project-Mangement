@@ -1,41 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '@/lib/auth';
-import { readFile } from 'fs/promises';
-import path from 'path';
+import { withAuth, SessionUser } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
-export const GET = withAuth(async (req: NextRequest) => {
+export const GET = withAuth(async (req: NextRequest, user: SessionUser) => {
   try {
-    const filePath = req.nextUrl.searchParams.get('path');
-    if (!filePath) return NextResponse.json({ error: 'No path' }, { status: 400 });
-
-    // Prevent path traversal
-    const safePath = path.normalize(filePath).replace(/^(\.\.(\/|\\|$))+/, '');
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    const fullPath = path.join(uploadsDir, safePath);
-
-    if (!fullPath.startsWith(uploadsDir + path.sep)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    const filePathParam = req.nextUrl.searchParams.get('path');
+    if (!filePathParam) {
+      return NextResponse.json({ error: 'No path specified' }, { status: 400 });
     }
 
-    const buffer = await readFile(fullPath);
-    const ext = path.extname(fullPath).toLowerCase();
-    const mimeTypes: Record<string, string> = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.pdf': 'application/pdf',
-      '.txt': 'text/plain',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      '.csv': 'text/csv',
-      '.json': 'application/json'
-    };
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-    return new NextResponse(buffer, {
-      headers: { 'Content-Type': contentType }
+    // Since the path param might just be the filename or a relative path, 
+    // we search our DB for a matching attachment.
+    const attachment = await prisma.attachment.findFirst({
+      where: {
+        OR: [
+          { filePath: filePathParam },
+          { filePath: { endsWith: filePathParam } }
+        ]
+      },
+      include: {
+        ticket: {
+          select: {
+            id: true,
+            assignedToId: true,
+            requesterName: true
+          }
+        }
+      }
     });
-  } catch {
-    return NextResponse.json({ error: 'File not found' }, { status: 404 });
+
+    if (!attachment) {
+      return NextResponse.json({ error: 'Attachment not found' }, { status: 404 });
+    }
+
+    // Fetch user details including database role
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { id: true, role: true, name: true }
+    });
+
+    if (!dbUser) {
+      return NextResponse.json({ error: 'User forbidden' }, { status: 403 });
+    }
+
+    // Ownership check: ADMIN, STAFF, or the ticket's assignee/requester
+    const isAuthorized = 
+      dbUser.role === 'ADMIN' || 
+      dbUser.role === 'STAFF' || 
+      attachment.ticket.assignedToId === dbUser.id ||
+      attachment.ticket.requesterName === dbUser.name;
+
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Redirect to the stored public URL
+    // ensure attachment.filePath is a valid URL
+    const finalUrl = attachment.filePath.startsWith('http') 
+      ? attachment.filePath 
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/attachments/${attachment.filePath}`;
+
+    return NextResponse.redirect(finalUrl);
+  } catch (error) {
+    console.error('File serving error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 });
