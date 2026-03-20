@@ -1,22 +1,8 @@
-import { createClient } from './supabase/client';
-
-const BUCKET_NAME = 'attachments';
-
+// Note: Supabase Storage is disabled. Please integrate an alternative like Vercel Blob or S3.
 export async function uploadAttachment(ticketId: number, file: File) {
-  const supabase = createClient();
-  const fileExt = file.name.split('.').pop();
-  const filePath = `${ticketId}/${Math.random()}.${fileExt}`;
-
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(filePath, file, { upsert: false });
-
-  if (error) {
-    throw error;
-  }
-
+  console.warn('Storage is currently disabled (No more Supabase)');
   return {
-    path: data.path,
+    path: `placeholder/${file.name}`,
     name: file.name,
     size: file.size,
     type: file.type
@@ -24,14 +10,5 @@ export async function uploadAttachment(ticketId: number, file: File) {
 }
 
 export async function getFileUrl(path: string) {
-  const supabase = createClient();
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .createSignedUrl(path, 3600); // 1 hour
-
-  if (error) {
-    throw error;
-  }
-
-  return data.signedUrl;
+  return ''; // Return empty string as storage is disabled
 }

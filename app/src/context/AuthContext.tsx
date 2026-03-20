@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { SessionUser } from '@/lib/auth';
 
 interface AuthContextType {
@@ -19,21 +18,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
 
   const fetchProfile = useCallback(async (): Promise<SessionUser | null> => {
     try {
-      const { data: { user: supabaseUser }, error } = await supabase.auth.getUser();
-      if (supabaseUser) {
-          const sessionUser: SessionUser = {
-            id: supabaseUser.id,
-            email: supabaseUser.email!,
-            role: supabaseUser.user_metadata?.role,
-            name: supabaseUser.user_metadata?.name,
-            username: supabaseUser.user_metadata?.username || supabaseUser.email?.split('@')[0]
-          };
-          setUser(sessionUser);
-          return sessionUser;
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+        return data.user;
       } else {
         setUser(null);
       }
@@ -41,7 +33,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error('Failed to fetch profile:', err);
     }
     return null;
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -50,32 +42,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (session?.user) {
-            const u = session.user;
-            setUser({
-              id: u.id,
-              email: u.email!,
-              role: u.user_metadata?.role,
-              name: u.user_metadata?.name,
-              username: u.user_metadata?.username || u.email?.split('@')[0]
-            });
-        } else {
-            setUser(null);
-        }
-    });
-
-    return () => {
-        subscription.unsubscribe();
-    }
-  }, [fetchProfile, supabase]);
+  }, [fetchProfile]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    router.push('/login');
-    router.refresh();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+      router.push('/login');
+      router.refresh();
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
   };
 
   return (

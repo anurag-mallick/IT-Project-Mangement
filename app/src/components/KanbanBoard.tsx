@@ -5,7 +5,6 @@ import TicketDetailModal from "@/components/TicketDetailModal";
 import { Ticket, TicketStatus, User } from "@/types";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 interface KanbanProps {
   searchQuery?: string;
@@ -26,7 +25,6 @@ const KanbanBoard = ({ searchQuery = "", users, assets }: KanbanProps) => {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [columns, setColumns] = useState<{ id: number; title: string; order: number }[]>([]);
-  const supabase = createClient();
 
   const fetchColumns = async () => {
     try {
@@ -67,32 +65,10 @@ const KanbanBoard = ({ searchQuery = "", users, assets }: KanbanProps) => {
   useEffect(() => {
     fetchTickets();
     fetchColumns();
-
-    // Fix 5: Add Realtime subscription with correct DELETE filter
-    const channel = supabase
-      .channel('kanban-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Ticket' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setTickets((prev) => [payload.new as Ticket, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
-            setTickets((prev) =>
-              prev.map((t) => (t.id === payload.new.id ? { ...t, ...(payload.new as Ticket) } : t))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            // Corrected filter logic (!== instead of ===)
-            setTickets((prev) => prev.filter((t) => t.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [supabase]);
+    
+    // Note: Real-time updates via Supabase are disabled.
+    // In a production environment, you may wish to use an alternative like Pusher or WebSockets.
+  }, []);
 
   useEffect(() => {
     if (selectedTicket) {
@@ -156,7 +132,7 @@ const KanbanBoard = ({ searchQuery = "", users, assets }: KanbanProps) => {
             <div
               key={col.id}
               className={`
-                min-w-[300px] w-[300px] flex-shrink-0 flex flex-col rounded-2xl
+                min-w-[300px] w-[300px] shrink-0 flex flex-col rounded-2xl
                 bg-zinc-900/40 border border-white/5
               `}
             >
