@@ -1,25 +1,29 @@
 export const revalidate = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { withAuth } from "@/lib/auth";
+import { withAuth, SessionUser } from "@/lib/auth";
+import bcrypt from 'bcryptjs';
 
-async function getUsersHandler() {
+async function getUsersHandler(req: NextRequest, user: SessionUser) {
   try {
-    // Return all users from the database, regardless of role, 
-    // so tickets can be assigned to anyone.
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { role: true }
+    });
+    const isAdmin = dbUser?.role === 'ADMIN';
+
     const users = await prisma.user.findMany({
       select: {
         id: true,
         name: true,
         username: true,
-        email: true,
-        role: true,
         isActive: true,
-        createdAt: true,
+        ...(isAdmin ? { email: true, role: true, createdAt: true } : {})
       },
+      where: isAdmin ? {} : { isActive: true },
       orderBy: { name: 'asc' }
     });
-    
+
     return NextResponse.json(users);
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -27,21 +31,30 @@ async function getUsersHandler() {
   }
 }
 
-async function createUserHandler(req: NextRequest, user: any) {
+async function createUserHandler(req: NextRequest, user: SessionUser) {
   try {
-    // Basic implementation for the admin panel's New User Modal
+    // Fix 2: Verify role in DB
+    const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { role: true }
+    });
+    if (dbUser?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const data = await req.json();
     
-    // In a real production app, we would create the user in Supabase Auth first
-    // using the service_role key, then insert into Prisma.
-    // Here we just insert into Prisma so the user shows up in the database list.
+    // Fix 1: Hash password before storing
+    const passwordToHash = data.password || 'Welcome@123';
+    const hashed = await bcrypt.hash(passwordToHash, 10);
+
     const newUser = await prisma.user.create({
       data: {
         username: data.username || data.email?.split('@')[0] || 'user',
         email: data.email,
         name: data.name || '',
         role: data.role || 'STAFF',
-        password: data.password || '$2b$10$abcdefghijklmnopqrstuv', // Dummy hash
+        password: hashed,
         isActive: true
       }
     });
@@ -55,4 +68,3 @@ async function createUserHandler(req: NextRequest, user: any) {
 
 export const GET = withAuth(getUsersHandler);
 export const POST = withAuth(createUserHandler);
-

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 
 interface NewUserModalProps {
   isOpen: boolean;
@@ -10,12 +10,13 @@ interface NewUserModalProps {
 }
 
 const NewUserModal = ({ isOpen, onClose, onSuccess }: NewUserModalProps) => {
-  const { token } = useAuth();
+  const {} = useAuth();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    password: 'Welcome@123',
+    password: '',
     name: '',
     role: 'STAFF'
   });
@@ -25,12 +26,12 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }: NewUserModalProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/users', {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           ...formData,
@@ -42,10 +43,10 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }: NewUserModalProps) => {
         onClose();
       } else {
         const data = await res.json();
-        alert(data.error || 'Error creating user');
+        setError(data.error || 'Error creating user');
       }
     } catch (err) {
-      alert('Error connecting to server');
+      setError('Error connecting to server');
     } finally {
       setLoading(false);
     }
@@ -62,6 +63,13 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }: NewUserModalProps) => {
         <h2 className="text-2xl font-bold mb-6">Add New User</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-red-500 text-xs font-bold mb-4">
+              <AlertCircle size={14} />
+              {error}
+            </div>
+          )}
+
           <div className="space-y-1">
             <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Full Name</label>
             <input 
@@ -114,14 +122,12 @@ const NewUserModal = ({ isOpen, onClose, onSuccess }: NewUserModalProps) => {
           <div className="space-y-1">
             <label className="text-[10px] uppercase font-bold text-white/40 ml-1">Initial Password</label>
             <input 
-              required
               type="text" 
               value={formData.password}
               onChange={(e) => setFormData({...formData, password: e.target.value})}
-              placeholder="••••••••"
+              placeholder="Leave blank to use default (Welcome@123)"
               className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm focus:border-indigo-500/50 outline-none text-indigo-400 font-medium"
             />
-            <p className="text-[9px] text-white/20 ml-1 italic">Default is Welcome@123</p>
           </div>
 
           <button 

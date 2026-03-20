@@ -92,4 +92,8 @@ export interface Ticket {
   updatedAt: string | Date;
   dueDate?: string | Date | null;
   slaBreachAt?: string | Date | null;
+  _count?: {
+    comments: number;
+    checklists: number;
+  };
 }

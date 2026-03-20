@@ -38,7 +38,7 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 const ReportsView = () => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState<TicketStats | null>(null);
   const [recentTickets, setRecentTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,11 +48,10 @@ const ReportsView = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/tickets', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch('/api/tickets');
         if (!res.ok) throw new Error('Failed to load tickets');
-        const tickets: any[] = await res.json();
+        const data = await res.json();
+        const tickets: any[] = data.tickets || [];
 
         const byStatus: Record<string, number> = {};
         const byPriority: Record<string, number> = {};
@@ -84,8 +83,10 @@ const ReportsView = () => {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [token]);
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   if (loading) return (
     <div className="flex items-center justify-center py-24">

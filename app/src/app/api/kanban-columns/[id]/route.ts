@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 
-export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { params: { id: string } }) => {
-  if (user.role !== 'ADMIN') {
+export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
+    const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+  if (dbUser?.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   
@@ -31,8 +35,12 @@ export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { pa
   }
 });
 
-export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: { params: { id: string } }) => {
-  if (user.role !== 'ADMIN') {
+export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
+    const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+  if (dbUser?.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   

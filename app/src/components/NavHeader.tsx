@@ -1,18 +1,30 @@
 "use client";
 import React from 'react';
-import { Settings, Server, ChevronRight, Star, LayoutGrid, List, BarChart, Calendar, Search, Menu } from 'lucide-react';
+import { Settings, Server, ChevronRight, Star, LayoutGrid, List, BarChart, Calendar, Search, Menu, Shield, Maximize2, Minimize2, Move } from 'lucide-react';
 import Link from 'next/link';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
+import { useDensity } from '@/context/DensityContext';
 
 interface BreadcrumbsProps {
   activeView: string;
-  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar' | 'intelligence') => void;
+  setActiveView: (view: 'kanban' | 'list' | 'reports' | 'calendar' | 'intelligence' | 'sla') => void;
   searchQuery?: string;
   onSearchChange?: (val: string) => void;
   onMenuToggle?: () => void;
 }
 
+const VIEW_LABELS: Record<string, string> = {
+  intelligence: 'Intelligence Dashboard',
+  kanban: 'Board View',
+  list: 'List View',
+  calendar: 'Calendar View',
+  sla: 'SLA Monitor',
+  reports: 'Reports',
+};
+
 const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange, onMenuToggle }: BreadcrumbsProps) => {
+  const { density, setDensity } = useDensity();
+
   return (
     <header className="h-14 border-b border-white/5 flex items-center justify-between px-4 md:px-6 bg-zinc-950/20 backdrop-blur-sm sticky top-0 z-30 gap-4">
       <div className="flex items-center min-w-0">
@@ -25,15 +37,12 @@ const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange, onM
           </button>
         )}
         
-        {/* Breadcrumbs */}
         <div className="hidden sm:flex items-center gap-2 text-sm shrink-0 truncate">
           <span className="text-white/40 hover:text-white cursor-pointer transition-colors truncate">Spaces</span>
           <ChevronRight size={14} className="text-white/20 shrink-0" />
-          <span className="text-white/40 hover:text-white cursor-pointer transition-colors truncate">IT Operations</span>
-          <ChevronRight size={14} className="text-white/20 shrink-0" />
           <div className="flex items-center gap-2 font-bold px-2 py-1 rounded bg-white/5 shrink-0">
             <LayoutGrid size={14} className="text-blue-500" />
-            <span>Ticket Board</span>
+            <span>{VIEW_LABELS[activeView] || 'Dashboard'}</span>
           </div>
           <Star size={14} className="text-white/20 hover:text-yellow-500 cursor-pointer transition-colors ml-2 shrink-0" />
         </div>
@@ -48,15 +57,40 @@ const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange, onM
               type="text"
               placeholder="Search across all tickets..."
               value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => onSearchChange(e.target.value)}
               className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-1.5 text-xs text-white placeholder:text-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all font-medium"
             />
           </div>
         </div>
       )}
 
-      {/* View Switcher & Actions */}
+      {/* Density & View Switcher */}
       <div className="flex items-center gap-4 md:gap-6 ml-auto shrink-0 overflow-x-auto scrollbar-hide py-1">
+        {/* Density Toggle */}
+        <div className="flex items-center bg-white/5 p-1 rounded-md border border-white/5 shrink-0 mr-2">
+          <button 
+            onClick={() => setDensity('compact')}
+            className={`p-1.5 rounded transition-all ${density === 'compact' ? 'bg-zinc-800 text-blue-500' : 'text-white/20 hover:text-white/40'}`}
+            title="Compact View"
+          >
+            <Minimize2 size={13} />
+          </button>
+          <button 
+            onClick={() => setDensity('comfortable')}
+            className={`p-1.5 rounded transition-all ${density === 'comfortable' ? 'bg-zinc-800 text-blue-500' : 'text-white/20 hover:text-white/40'}`}
+            title="Comfortable View"
+          >
+            <Move size={13} />
+          </button>
+          <button 
+            onClick={() => setDensity('spacious')}
+            className={`p-1.5 rounded transition-all ${density === 'spacious' ? 'bg-zinc-800 text-blue-500' : 'text-white/20 hover:text-white/40'}`}
+            title="Spacious View"
+          >
+            <Maximize2 size={13} />
+          </button>
+        </div>
+
         <div className="flex items-center bg-white/5 p-1 rounded-md border border-white/5 shrink-0">
           <button 
             onClick={() => setActiveView('intelligence')}
@@ -85,6 +119,13 @@ const NavHeader = ({ activeView, setActiveView, searchQuery, onSearchChange, onM
           >
             <Calendar size={12} />
             Calendar
+          </button>
+          <button 
+            onClick={() => setActiveView('sla')}
+            className={`flex items-center gap-2 px-3 py-1 rounded text-xs font-medium transition-all ${activeView === 'sla' ? 'bg-zinc-800 text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+          >
+            <Shield size={12} className="text-blue-400" />
+            SLA
           </button>
         </div>
 

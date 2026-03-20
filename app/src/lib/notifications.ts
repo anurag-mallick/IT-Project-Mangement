@@ -1,8 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
 
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
-export async function sendSlackNotification(ticket: any) {
+interface NotificationTicket {
+  id: number;
+  title: string;
+  priority: string;
+  status: string;
+  assignedTo?: {
+    name: string;
+  };
+}
+
+export async function sendSlackNotification(ticket: NotificationTicket) {
   if (!SLACK_WEBHOOK_URL) {
     console.log('Slack webhook URL not configured, skipping notification.');
     return;

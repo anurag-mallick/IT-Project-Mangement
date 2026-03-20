@@ -1,31 +1,42 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/auth';
+import { withAuth, SessionUser } from '@/lib/auth';
 import { calculateSlaBreachTime } from '@/lib/sla';
 import { runAutomations } from '@/lib/automations';
 import { TicketStatus, TicketPriority } from '@/generated/prisma';
 import { sendTicketEmail } from '@/lib/email';
 
-export const GET = withAuth(async (req: NextRequest) => {
+export const GET = withAuth(async (req: NextRequest, user: SessionUser) => {
   try {
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = parseInt(searchParams.get('pageSize') || '50');
     const skip = (page - 1) * pageSize;
     const skipPagination = searchParams.get('all') === 'true';
+    const hasDueDate = searchParams.get('hasDueDate') === 'true';
+
+    const whereClause: any = {};
+    if (hasDueDate) {
+      whereClause.dueDate = { not: null };
+    }
 
     const [tickets, totalCount] = await Promise.all([
       prisma.ticket.findMany({
-        include: { 
+        where: whereClause,
+        select: {
+          id: true, title: true, status: true, priority: true,
+          createdAt: true, updatedAt: true, dueDate: true, slaBreachAt: true,
+          tags: true, requesterName: true, assetId: true, folderId: true,
           assignedTo: { select: { id: true, username: true, name: true } },
-          comments: { include: { author: { select: { name: true } } }, orderBy: { createdAt: 'asc' } },
-          checklists: { orderBy: { createdAt: 'asc' } }
+          _count: { select: { comments: true, checklists: true } }
         },
         orderBy: { createdAt: 'desc' },
         ...(skipPagination ? {} : { skip, take: pageSize })
       }),
-      prisma.ticket.count()
+      prisma.ticket.count({
+        where: whereClause
+      })
     ]);
 
     return NextResponse.json({
@@ -42,7 +53,7 @@ export const GET = withAuth(async (req: NextRequest) => {
   }
 });
 
-export const POST = withAuth(async (req: NextRequest) => {
+export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
   try {
     const body = await req.json();
     const { title, description, priority, status, assignedToId, assetId, tags } = body;
@@ -51,7 +62,6 @@ export const POST = withAuth(async (req: NextRequest) => {
       return NextResponse.json({ error: 'Title and description are required' }, { status: 400 });
     }
 
-    // Validate priority and status against enums
     const validatedPriority = (priority && Object.values(TicketPriority).includes(priority)) ? (priority as TicketPriority) : TicketPriority.P2;
     const validatedStatus = (status && Object.values(TicketStatus).includes(status)) ? (status as TicketStatus) : TicketStatus.TODO;
 
@@ -71,18 +81,31 @@ export const POST = withAuth(async (req: NextRequest) => {
       include: { assignedTo: { select: { id: true, username: true, name: true } } }
     });
 
-    // Run Automations
+    const dbUser = await prisma.user.findFirst({
+      where: { username: user.email }
+    });
+    
+    await prisma.activityLog.create({
+      data: {
+        ticketId: ticket.id,
+        userId: dbUser?.id,
+        action: 'TICKET_CREATED',
+        newValue: title
+      }
+    });
+
     const autoUpdatedTicket = await runAutomations('ON_TICKET_CREATED', ticket);
 
-    // Send email to admin for P0 tickets
     if (validatedPriority === TicketPriority.P0) {
       const adminUsers = await prisma.user.findMany({ where: { role: 'ADMIN' } });
       for (const admin of adminUsers) {
-        if (admin.username) {
+        // Fix 8: Use admin.email with admin.username as fallback
+        const recipientEmail = (admin as any).email || admin.username;
+        if (recipientEmail) {
           await sendTicketEmail({
             type: 'CREATED',
             ticket: autoUpdatedTicket as any,
-            recipient: { email: admin.username, name: admin.name || 'Admin' }
+            recipient: { email: recipientEmail, name: admin.name || 'Admin' }
           });
         }
       }
@@ -99,9 +122,8 @@ export const POST = withAuth(async (req: NextRequest) => {
     const isAuthError = err.message?.includes('Authentication failed') || err.message?.includes('password authentication failed');
     return NextResponse.json({ 
       error: isAuthError 
-        ? 'Database Authentication Failed. Please check your Supabase credentials in Vercel.' 
+        ? 'Database authentication failed. Check your DATABASE_URL in .env.' 
         : `Failed to create ticket: ${err.message || 'Unknown error'}`
     }, { status: 500 });
   }
 });
-

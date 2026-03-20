@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth, isAdmin } from '@/lib/auth';
+import { withAuth, requireAdmin } from '@/lib/auth';
 
 export const GET = withAuth(async () => {
   try {
@@ -14,8 +14,8 @@ export const GET = withAuth(async () => {
   }
 });
 
-export const POST = withAuth(async (req) => {
-  const adminCheck = await isAdmin();
+export const POST = withAuth(async (req: NextRequest, _user: any) => {
+  const adminCheck = await requireAdmin(_user);
   if (!adminCheck) {
     return NextResponse.json({ error: 'Unauthorized. Admins only.' }, { status: 403 });
   }

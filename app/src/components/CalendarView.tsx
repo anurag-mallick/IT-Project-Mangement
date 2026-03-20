@@ -35,7 +35,7 @@ const CalendarView = ({ users, assets }: CalendarViewProps) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/tickets?all=true');
+      const res = await fetch('/api/tickets?all=true&hasDueDate=true');
       if (!res.ok) throw new Error('Failed to fetch tickets');
       const data = await res.json();
       setTickets(data.tickets || []);
@@ -70,7 +70,7 @@ const CalendarView = ({ users, assets }: CalendarViewProps) => {
     // Big calendar requires start and end Date objects
     return {
       id: ticket.id,
-      title: `${ticket.title} ${ticket.timeSpent ? `(${ticket.timeSpent}h)` : ''}`,
+      title: ticket.title,
       start,
       end,
       resource: ticket,

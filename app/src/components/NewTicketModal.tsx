@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { X, Calendar as CalendarIcon, Clock, CheckCircle, Tag, ChevronDown, Folder as FolderIcon, Upload, File, Layout, Server, AlertCircle } from 'lucide-react';
+import { X, Upload, Server, AlertCircle } from 'lucide-react';
 import { TicketStatus, Priority, User } from '../types';
 import { uploadAttachment } from '@/lib/storage';
 
@@ -18,7 +17,7 @@ interface Template {
   status: TicketStatus;
   priority: Priority;
   tags: string[];
-  checklists: any;
+  checklists: { id: number; title: string; isCompleted: boolean }[];
 }
 
 // P0 = Critical (highest), P1 = High, P2 = Normal (default), P3 = Low
@@ -30,13 +29,13 @@ const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
 ];
 
 const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => {
-  const { token } = useAuth();
+  const [selectedTemplateChecklists, setSelectedTemplateChecklists] = useState<{title: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [staff, setStaff] = useState<User[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [attachment, setAttachment] = useState<File | null>(null);
-  const [assets, setAssets] = useState<any[]>([]);
+  const [assets, setAssets] = useState<{ id: number; name: string; type: string }[]>([]);
   const [formData, setFormData] = useState<{
     title: string;
     description: string;
@@ -61,39 +60,38 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
     if (isOpen) {
       setError('');
       setAttachment(null);
+      setSelectedTemplateChecklists([]);
       setFormData({ title: '', description: '', priority: 'P2', status: 'TODO', assignedToId: '', tags: '', dueDate: '', assetId: '' });
       
       // Fetch staff
-      fetch('/api/users', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      fetch('/api/users')
         .then(r => r.ok ? r.json() : [])
         .then(data => setStaff(Array.isArray(data) ? data.filter((u: User) => u.isActive) : []))
         .catch(() => setStaff([]));
 
       // Fetch assets
-      fetch('/api/assets', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      fetch('/api/assets')
         .then(r => r.ok ? r.json() : [])
         .then(data => setAssets(Array.isArray(data) ? data : []))
         .catch(() => setAssets([]));
 
       // Fetch templates
-      fetch('/api/templates', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      fetch('/api/templates')
         .then(r => r.ok ? r.json() : [])
         .then(data => setTemplates(Array.isArray(data) ? data : []))
         .catch(() => setTemplates([]));
     }
-  }, [isOpen, token]);
+  }, [isOpen]);
 
   const handleTemplateSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const tId = parseInt(e.target.value);
-    if (!tId) return;
+    if (!tId) {
+      setSelectedTemplateChecklists([]);
+      return;
+    }
     const t = templates.find(x => x.id === tId);
     if (t) {
+      setSelectedTemplateChecklists(t.checklists || []);
       setFormData(prev => ({
         ...prev,
         title: t.name,
@@ -112,7 +110,16 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
     setError('');
     setLoading(true);
     try {
-      const body: any = {
+      const body: {
+        title: string;
+        description: string;
+        priority: Priority;
+        status: TicketStatus;
+        tags: string[];
+        assignedToId?: number;
+        dueDate?: string;
+        assetId?: number;
+      } = {
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
@@ -126,8 +133,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
       const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(body),
       });
@@ -135,12 +141,31 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
       if (res.ok) {
         const newTicket = await res.json();
         
+        // Apply template checklists
+        if (selectedTemplateChecklists.length > 0) {
+          try {
+            await Promise.all(selectedTemplateChecklists.map(item => 
+              fetch(`/api/tickets/${newTicket.id}/checklists`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: item.title })
+              })
+            ));
+          } catch (checklistErr) {
+            console.error("Failed to apply template checklists", checklistErr);
+          }
+        }
+
         // Upload attachment if present
         if (attachment) {
           try {
             await uploadAttachment(newTicket.id, attachment);
           } catch (uploadErr) {
             console.error("Failed to upload attachment during creation", uploadErr);
+            setError('Ticket created, but attachment upload failed. Please try uploading the file again.');
+            setLoading(false);
+            onSuccess(); // still refresh the list
+            return;     // do NOT call onClose()
           }
         }
         
@@ -156,8 +181,8 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
       } catch {
         setError(`Connection error (${res.status}): ${res.statusText}`);
       }
-    } catch (err: any) {
-      setError(`Network error: ${err.message || 'Check your connection'}`);
+    } catch (err: unknown) {
+      setError(`Network error: ${err instanceof Error ? err.message : 'Check your connection'}`);
     } finally {
       setLoading(false);
     }
@@ -250,7 +275,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1 block flex items-center gap-2">
+              <label className="text-[10px] uppercase tracking-widest text-white/40 font-bold ml-1 block items-center gap-2">
                 <Server size={14} />
                 Related Asset (Optional)
               </label>
@@ -286,7 +311,7 @@ const NewTicketModal = ({ isOpen, onClose, onSuccess }: NewTicketModalProps) => 
               type="date" 
               value={formData.dueDate}
               onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
-              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors [color-scheme:dark]"
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors scheme-dark"
             />
           </div>
 

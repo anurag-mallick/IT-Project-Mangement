@@ -4,7 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 
 export const POST = withAuth(async (req: NextRequest, user: any) => {
-  if (user.role !== 'ADMIN') {
+    const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+  if (dbUser?.role !== 'ADMIN') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
   

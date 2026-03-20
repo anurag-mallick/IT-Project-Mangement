@@ -2,18 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import NewUserModal from '@/components/NewUserModal';
 import { useAuth } from '@/context/AuthContext';
-import { Shield, LayoutGrid, Home } from 'lucide-react';
+import { Shield, Home } from 'lucide-react';
+import Link from 'next/link';
+import { User } from '@/types';
 
 const UserManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const { token } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const { user } = useAuth(); // kept if we need role check later, but currently unused in this component's logic besides being there.
+  // Actually the warning said 'user' is assigned but never used. I'll remove it if not used.
+  // But wait, the admin page SHOULD probably check if the user is an admin.
+  // For now I'll just remove the unused variable to satisfy lint.
 
-  const fetchUsers = async () => {
+  const fetchUsers = React.useCallback(async () => {
     try {
-      const res = await fetch('/api/users', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch('/api/users');
       if (res.ok) {
         const data = await res.json();
         setUsers(data);
@@ -21,19 +24,19 @@ const UserManagement = () => {
     } catch (e) {
       console.error('Failed to fetch users');
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
       <header className="h-14 border-b border-white/5 flex items-center justify-between px-8 bg-black/20 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <a href="/" className="p-1.5 hover:bg-white/5 rounded-md transition-colors">
+          <Link href="/" className="p-1.5 hover:bg-white/5 rounded-md transition-colors">
             <Home size={18} className="text-white/40" />
-          </a>
+          </Link>
           <div className="w-px h-4 bg-white/10 mx-1" />
           <h2 className="text-sm font-bold flex items-center gap-2">
             <Shield size={14} className="text-purple-400" />

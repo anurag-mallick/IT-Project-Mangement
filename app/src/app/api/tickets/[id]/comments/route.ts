@@ -5,9 +5,40 @@ import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-export const POST = withAuth(async (req: NextRequest, user: any, { params }: { params: { id: string } }) => {
+export const GET = withAuth(async (req: NextRequest, _user: { email: string; id: number; name?: string; username: string; role: string }, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const ticketId = parseInt(params.id);
+    const { id } = await params;
+    const ticketId = parseInt(id);
+    if (isNaN(ticketId)) {
+      return NextResponse.json({ error: 'Invalid ticket ID' }, { status: 400 });
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: { ticketId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(comments);
+  } catch (error) {
+    console.error('Failed to fetch comments:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+});
+
+export const POST = withAuth(async (req: NextRequest, user: { email: string; id: number; name?: string; username: string; role: string }, { params }: { params: Promise<{ id: string }> }) => {
+  try {
+    const { id } = await params;
+    const ticketId = parseInt(id);
     if (isNaN(ticketId)) {
       return NextResponse.json({ error: 'Invalid ticket ID' }, { status: 400 });
     }
@@ -28,8 +59,24 @@ export const POST = withAuth(async (req: NextRequest, user: any, { params }: { p
         authorName: user.name || user.username,
       },
       include: {
-         author: { select: { name: true, username: true } },
+         author: { select: { id: true, name: true, username: true } },
          ticket: { select: { title: true } }
+      }
+    });
+
+    // Log the comment addition
+    const dbUser = await prisma.user.findFirst({
+      where: { username: user.email }
+    });
+
+    const truncatedContent = content.length > 80 ? content.substring(0, 80) + '...' : content;
+    
+    await prisma.activityLog.create({
+      data: {
+        ticketId,
+        userId: dbUser?.id,
+        action: 'COMMENT_ADDED',
+        newValue: truncatedContent
       }
     });
 

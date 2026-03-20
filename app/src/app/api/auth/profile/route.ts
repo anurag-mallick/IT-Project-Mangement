@@ -5,7 +5,7 @@ import { withAuth } from "@/lib/auth";
 
 export const GET = withAuth(async (req: NextRequest, user: any) => {
   try {
-    // Current user email from Supabase
+    // Email from JWT session
     const email = user.email;
 
     if (!email) {

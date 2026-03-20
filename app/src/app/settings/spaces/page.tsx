@@ -16,7 +16,7 @@ interface Space {
 }
 
 export default function SpacesSettingsPage() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -36,14 +36,11 @@ export default function SpacesSettingsPage() {
 
   useEffect(() => {
     fetchSpaces();
-  }, [token]);
+  }, []);
 
   const fetchSpaces = async () => {
-    if (!token) return;
     try {
-      const res = await fetch('/api/spaces', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch('/api/spaces');
       if (res.ok) {
         setSpaces(await res.json());
       }
@@ -61,8 +58,7 @@ export default function SpacesSettingsPage() {
       const res = await fetch('/api/spaces', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name: newSpaceName, description: newSpaceDesc })
       });
@@ -86,8 +82,7 @@ export default function SpacesSettingsPage() {
       const res = await fetch('/api/folders', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name, spaceId })
       });
@@ -104,8 +99,7 @@ export default function SpacesSettingsPage() {
     if (!confirm("Delete this folder? Tickets will have their folder reference cleared.")) return;
     try {
       const res = await fetch(`/api/folders/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
+        method: 'DELETE'
       });
       if (res.ok) fetchSpaces();
     } catch (err: any) {
@@ -124,7 +118,7 @@ export default function SpacesSettingsPage() {
     try {
       const res = await fetch(`/api/spaces/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editSpaceName, description: editSpaceDesc })
       });
       if (res.ok) {
@@ -146,7 +140,7 @@ export default function SpacesSettingsPage() {
     try {
       const res = await fetch(`/api/folders/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: editFolderName })
       });
       if (res.ok) {

@@ -4,7 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
 export const GET = withAuth(async (req: NextRequest, user: any) => {
-  if (user.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+  if (dbUser?.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   try {
     const automations = await prisma.automation.findMany({
@@ -17,7 +23,13 @@ export const GET = withAuth(async (req: NextRequest, user: any) => {
 });
 
 export const POST = withAuth(async (req: NextRequest, user: any) => {
-  if (user.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+  if (dbUser?.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
 
   try {
     const { name, trigger, condition, action } = await req.json();

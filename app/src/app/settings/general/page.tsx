@@ -1,8 +1,11 @@
 "use client";
-import React from 'react';
 import { Settings as SettingsIcon, Info } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function GeneralSettings() {
+  const { user } = useAuth();
+  const workspaceUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') || 'localhost:3000';
+
   return (
     <div className="max-w-2xl">
       <div className="mb-8">
@@ -28,14 +31,14 @@ export default function GeneralSettings() {
           <div className="grid gap-2">
             <span className="text-[10px] uppercase font-black text-white/20 tracking-[0.2em]">Workspace URL</span>
             <div className="bg-white/5 border border-white/5 rounded-xl px-4 py-3 text-sm text-blue-400 font-mono">
-              it-project-mangement.vercel.app
+              {workspaceUrl}
             </div>
           </div>
           
           <div className="grid gap-2">
             <span className="text-[10px] uppercase font-black text-white/20 tracking-[0.2em]">Administrator</span>
             <div className="text-white/60 text-sm">
-              Anurag Mallick
+              {user?.name || 'Administrator'}
             </div>
           </div>
         </div>

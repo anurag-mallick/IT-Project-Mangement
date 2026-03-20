@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Clock, ShieldAlert, Timer } from 'lucide-react';
+import { AlertTriangle, Clock, ShieldAlert, Timer, ChevronRight, User } from 'lucide-react';
+import Link from 'next/link';
 
 interface SLATicket {
   id: number;
@@ -26,50 +27,61 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
   useEffect(() => {
     const calculateTimeLeft = () => {
       const difference = new Date(targetDate).getTime() - new Date().getTime();
-      
-      if (difference <= 0) {
-        return 'BREACHED';
-      }
-
+      if (difference <= 0) return 'BREACHED';
       const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
       return `${hours}h ${minutes}m ${seconds}s`;
     };
 
     setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft());
-    }, 1000);
-
+    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
     return () => clearInterval(timer);
   }, [targetDate]);
 
   return <span className="font-mono">{timeLeft}</span>;
 };
 
-const TicketCard = ({ ticket, type }: { ticket: SLATicket, type: 'breached' | 'warning' | 'safe' }) => {
-  const styles = {
-    breached: 'bg-red-500/10 border-red-500/20 text-red-500',
-    warning: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-500',
-    safe: 'bg-green-500/10 border-green-500/20 text-green-500'
+const SLARow = ({ ticket, urgency }: { ticket: SLATicket, urgency: 'critical' | 'warning' | 'high' | 'normal' }) => {
+  const urgencyColors = {
+    critical: 'text-red-500 border-l-red-500 bg-red-500/5',
+    warning: 'text-orange-500 border-l-orange-500 bg-orange-500/5',
+    high: 'text-yellow-500 border-l-yellow-500 bg-yellow-500/5',
+    normal: 'text-green-500 border-l-green-500 bg-green-500/5',
   };
 
   return (
-    <div className={`p-4 rounded-xl border ${styles[type]} mb-3 transition-all hover:scale-[1.02] cursor-pointer`}
-         onClick={() => window.location.href = `/?ticketId=${ticket.id}`}>
-      <div className="flex justify-between items-start mb-2">
-         <span className="text-xs font-bold uppercase tracking-widest opacity-80">{ticket.priority}</span>
-         <span className="text-xs opacity-60">#{ticket.id}</span>
+    <div className={`group flex items-center justify-between p-4 rounded-xl border border-white/5 border-l-4 transition-all hover:bg-white/[0.03] mb-2 ${urgencyColors[urgency]}`}>
+      <div className="flex-1 min-w-0 mr-4">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] font-mono text-white/20">#{ticket.id}</span>
+          <span className="text-[10px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-white/5 text-white/40">{ticket.priority}</span>
+        </div>
+        <h4 className="text-sm font-bold text-white truncate group-hover:text-blue-400 transition-colors">{ticket.title}</h4>
       </div>
-      <h4 className="font-bold text-sm mb-3 text-white">{ticket.title}</h4>
-      <div className="flex justify-between items-center text-xs font-medium">
-         <span className="text-white/60">{ticket.assignedTo?.name || ticket.assignedTo?.username || 'Unassigned'}</span>
-         <div className="flex items-center gap-1.5 opacity-90">
-            <Timer size={14} />
-            <CountdownTimer targetDate={ticket.slaBreachAt} />
-         </div>
+      
+      <div className="flex items-center gap-8 shrink-0">
+        <div className="flex flex-col items-end">
+           <span className="text-[9px] uppercase tracking-widest text-white/20 font-bold mb-1">Assignee</span>
+           <div className="flex items-center gap-2 text-white/60 text-xs font-medium">
+             <div className="w-5 h-5 rounded-full bg-white/5 flex items-center justify-center border border-white/5">
+               <User size={10} />
+             </div>
+             {ticket.assignedTo?.name || ticket.assignedTo?.username || 'Unassigned'}
+           </div>
+        </div>
+        
+        <div className="flex flex-col items-end w-24">
+           <span className="text-[9px] uppercase tracking-widest text-white/20 font-bold mb-1">Limit</span>
+           <div className="flex items-center gap-1.5 text-xs font-bold font-mono">
+             <Timer size={14} className="opacity-40" />
+             <CountdownTimer targetDate={ticket.slaBreachAt} />
+           </div>
+        </div>
+
+        <Link href={`/?ticketId=${ticket.id}`} className="p-2 hover:bg-white/10 rounded-lg text-white/20 hover:text-white transition-all">
+          <ChevronRight size={16} />
+        </Link>
       </div>
     </div>
   );
@@ -83,9 +95,7 @@ export default function SLADashboard() {
     const fetchData = async () => {
       try {
         const res = await fetch('/api/tickets/sla');
-        if (res.ok) {
-          setData(await res.json());
-        }
+        if (res.ok) setData(await res.json());
       } catch (e) {
         console.error("Failed to fetch SLA data", e);
       } finally {
@@ -93,87 +103,88 @@ export default function SLADashboard() {
       }
     };
     fetchData();
-    const interval = setInterval(fetchData, 60000); // refresh every minute
+    const interval = setInterval(fetchData, 60000);
     return () => clearInterval(interval);
   }, []);
 
   if (loading || !data) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-white/40 min-h-[400px]">
-         <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mb-4" />
-         Loading SLA Metrics...
+      <div className="flex flex-col items-center justify-center p-24 text-white/20">
+         <Loader2 className="w-8 h-8 animate-spin mb-4" />
+         <span className="text-[10px] uppercase tracking-widest font-black">Analyzing SLA Metrics</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-       <div className="flex items-center justify-between">
-         <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">SLA Dashboard</h2>
-            <p className="text-sm text-white/40 mt-1">Real-time monitoring of service level agreements.</p>
-         </div>
+    <div className="p-6 space-y-12 max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+       <div className="border-b border-white/5 pb-8">
+          <h2 className="text-3xl font-black text-white tracking-tight">SLA Watch</h2>
+          <p className="text-sm text-white/30 font-medium">Real-time surveillance of service commitments.</p>
        </div>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         
-         {/* Breached */}
-         <div className="bg-zinc-900/50 border border-red-500/20 rounded-2xl p-5 flex flex-col h-[600px]">
-            <div className="flex items-center gap-2 mb-4 text-red-500 font-bold uppercase tracking-widest text-xs">
-               <ShieldAlert size={16} /> Breached ({data.breached.length})
+       <div className="space-y-10">
+         {/* Critical Section */}
+         <section>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-1.5 bg-red-500/10 text-red-500 rounded-lg"><ShieldAlert size={18} /></div>
+              <h3 className="text-xs font-black uppercase tracking-widest text-white/40">Breached & Critical Risk</h3>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-               {data.breached.length === 0 ? (
-                 <p className="text-sm text-white/40 italic text-center mt-8">No breached tickets.</p>
-               ) : (
-                 data.breached.map(t => <TicketCard key={t.id} ticket={t} type="breached" />)
-               )}
+            <div className="space-y-1">
+              {[...data.breached, ...data.under1h].length === 0 ? (
+                <div className="p-12 text-center bg-zinc-900/40 rounded-3xl border border-white/5 border-dashed">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-white/10 font-black">All Targets Met</span>
+                </div>
+              ) : (
+                <>
+                  {data.breached.map(t => <SLARow key={t.id} ticket={t} urgency="critical" />)}
+                  {data.under1h.map(t => <SLARow key={t.id} ticket={t} urgency="warning" />)}
+                </>
+              )}
             </div>
-         </div>
+         </section>
 
-         {/* < 1h */}
-         <div className="bg-zinc-900/50 border border-orange-500/20 rounded-2xl p-5 flex flex-col h-[600px]">
-            <div className="flex items-center gap-2 mb-4 text-orange-500 font-bold uppercase tracking-widest text-xs">
-               <AlertTriangle size={16} /> &lt; 1 Hour ({data.under1h.length})
+         {/* Warning Section */}
+         <section>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-1.5 bg-orange-500/10 text-orange-500 rounded-lg"><AlertTriangle size={18} /></div>
+              <h3 className="text-xs font-black uppercase tracking-widest text-white/40">Incoming Deadlines (&lt; 4h)</h3>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-               {data.under1h.length === 0 ? (
-                 <p className="text-sm text-white/40 italic text-center mt-8">No tickets at critical risk.</p>
-               ) : (
-                 data.under1h.map(t => <TicketCard key={t.id} ticket={t} type="warning" />)
-               )}
+            <div className="space-y-1">
+              {data.under4h.length === 0 ? (
+                <div className="p-12 text-center bg-zinc-900/40 rounded-3xl border border-white/5 border-dashed">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-white/10 font-black">No Pressing Tickets</span>
+                </div>
+              ) : (
+                data.under4h.map(t => <SLARow key={t.id} ticket={t} urgency="high" />)
+              )}
             </div>
-         </div>
+         </section>
 
-         {/* < 4h */}
-         <div className="bg-zinc-900/50 border border-yellow-500/20 rounded-2xl p-5 flex flex-col h-[600px]">
-            <div className="flex items-center gap-2 mb-4 text-yellow-500 font-bold uppercase tracking-widest text-xs">
-               <Clock size={16} /> &lt; 4 Hours ({data.under4h.length})
+         {/* Safe Section */}
+         <section>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-1.5 bg-green-500/10 text-green-500 rounded-lg"><Clock size={18} /></div>
+              <h3 className="text-xs font-black uppercase tracking-widest text-white/40">Operational Window</h3>
             </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-               {data.under4h.length === 0 ? (
-                 <p className="text-sm text-white/40 italic text-center mt-8">No tickets at high risk.</p>
-               ) : (
-                 data.under4h.map(t => <TicketCard key={t.id} ticket={t} type="warning" />)
-               )}
+            <div className="space-y-1">
+              {[...data.under24h, ...data.safe].length === 0 ? (
+                <div className="p-12 text-center bg-zinc-900/40 rounded-3xl border border-white/5 border-dashed">
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-white/10 font-black">Queue Empty</span>
+                </div>
+              ) : (
+                <>
+                  {data.under24h.map(t => <SLARow key={t.id} ticket={t} urgency="normal" />)}
+                  {data.safe.map(t => <SLARow key={t.id} ticket={t} urgency="normal" />)}
+                </>
+              )}
             </div>
-         </div>
-
-         {/* < 24h & Safe */}
-         <div className="bg-zinc-900/50 border border-green-500/20 rounded-2xl p-5 flex flex-col h-[600px]">
-            <div className="flex items-center gap-2 mb-4 text-green-500 font-bold uppercase tracking-widest text-xs">
-               <ShieldAlert size={16} /> &lt; 24h & Safe ({data.under24h.length + data.safe.length})
-            </div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-               {data.under24h.map(t => <TicketCard key={t.id} ticket={t} type="safe" />)}
-               {data.safe.map(t => <TicketCard key={t.id} ticket={t} type="safe" />)}
-               {data.under24h.length === 0 && data.safe.length === 0 && (
-                 <p className="text-sm text-white/40 italic text-center mt-8">No tickets in safe window.</p>
-               )}
-            </div>
-         </div>
-
+         </section>
        </div>
     </div>
   );
 }
+
+const Loader2 = ({ className }: { className?: string }) => (
+  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+);

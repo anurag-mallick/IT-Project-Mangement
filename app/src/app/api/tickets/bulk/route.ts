@@ -1,15 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/auth';
+import { withAuth, SessionUser } from '@/lib/auth';
 import { TicketPriority, TicketStatus } from '@/generated/prisma';
 
-export const PATCH = withAuth(async (req: NextRequest, user: any) => {
+export const PATCH = withAuth(async (req: NextRequest, user: SessionUser) => {
   try {
     const body = await req.json();
     const { ids, data } = body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ error: 'No ticket IDs provided' }, { status: 400 });
+    }
+
+    // Fix 9: Check for unrecognized fields in 'data'
+    const allowedFields = ['status', 'priority', 'assignedToId', 'delete'];
+    const incomingFields = Object.keys(data);
+    const unrecognizedFields = incomingFields.filter(f => !allowedFields.includes(f));
+    
+    if (unrecognizedFields.length > 0) {
+      return NextResponse.json({ 
+        error: `Unrecognized fields in update data: ${unrecognizedFields.join(', ')}`,
+        allowedFields 
+      }, { status: 400 });
     }
 
     // Role check if try to delete
@@ -29,11 +41,17 @@ export const PATCH = withAuth(async (req: NextRequest, user: any) => {
     }
 
     // Otherwise it's an update
-    const updateData: any = {};
-    if (data.status && Object.values(TicketStatus).includes(data.status)) {
+    const updateData: Record<string, string | number | null> = {};
+    if (data.status) {
+      if (!Object.values(TicketStatus).includes(data.status)) {
+        return NextResponse.json({ error: `Invalid status: ${data.status}` }, { status: 400 });
+      }
       updateData.status = data.status;
     }
-    if (data.priority && Object.values(TicketPriority).includes(data.priority)) {
+    if (data.priority) {
+      if (!Object.values(TicketPriority).includes(data.priority)) {
+        return NextResponse.json({ error: `Invalid priority: ${data.priority}` }, { status: 400 });
+      }
       updateData.priority = data.priority;
     }
     if ('assignedToId' in data) {
@@ -48,6 +66,41 @@ export const PATCH = withAuth(async (req: NextRequest, user: any) => {
       where: { id: { in: ids } },
       data: updateData
     });
+
+    // Logging bulk updates
+    const dbUser = await prisma.user.findFirst({
+      where: { username: user.email }
+    });
+
+    const logs: any[] = [];
+    let assignedUserName: string | null = null;
+    if (updateData.assignedToId) {
+      const assignedUser = await prisma.user.findUnique({ 
+        where: { id: updateData.assignedToId as number }, 
+        select: { name: true, username: true } 
+      });
+      assignedUserName = assignedUser ? (assignedUser.name || assignedUser.username) : 'Unassigned';
+    } else if (updateData.assignedToId === null) {
+      assignedUserName = 'Unassigned';
+    }
+
+    for (const id of ids) {
+      if (updateData.status) {
+        logs.push({ ticketId: id, userId: dbUser?.id, action: 'STATUS_CHANGE', field: 'status', oldValue: 'Bulk Update', newValue: String(updateData.status) });
+      }
+      if (updateData.priority) {
+        logs.push({ ticketId: id, userId: dbUser?.id, action: 'PRIORITY_CHANGE', field: 'priority', oldValue: 'Bulk Update', newValue: String(updateData.priority) });
+      }
+      if ('assignedToId' in updateData) {
+        logs.push({ ticketId: id, userId: dbUser?.id, action: 'ASSIGNMENT_CHANGE', field: 'assignedToId', oldValue: 'Bulk Update', newValue: assignedUserName });
+      }
+    }
+
+    if (logs.length > 0) {
+      await prisma.activityLog.createMany({
+        data: logs
+      });
+    }
 
     return NextResponse.json({ success: true, count: result.count });
   } catch (error) {

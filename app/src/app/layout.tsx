@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "@/context/AuthContext";
+import { DensityProvider } from "@/context/DensityContext";
 
 export default function RootLayout({
   children,
@@ -27,9 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <DensityProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </DensityProvider>
       </body>
     </html>
   );

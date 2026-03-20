@@ -10,7 +10,7 @@ interface KanbanColumn {
 }
 
 export default function BoardStagesSettings() {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [columns, setColumns] = useState<KanbanColumn[]>([]);
   const [newStageName, setNewStageName] = useState('');
   const [loading, setLoading] = useState(true);
@@ -21,14 +21,11 @@ export default function BoardStagesSettings() {
 
   useEffect(() => {
     fetchColumns();
-  }, [token]);
+  }, []);
 
   const fetchColumns = async () => {
-    if (!token) return;
     try {
-      const res = await fetch("/api/kanban-columns", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch("/api/kanban-columns");
       if (res.ok) {
         setColumns(await res.json());
       }
@@ -49,7 +46,6 @@ export default function BoardStagesSettings() {
       const res = await fetch("/api/kanban-columns", {
         method: "POST",
         headers: { 
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ title: newStageName.trim().toUpperCase().replace(/ /g, '_'), order: newOrder })
@@ -72,8 +68,7 @@ export default function BoardStagesSettings() {
     if (!confirm("Are you sure? Tickets in this stage might lose their stage reference.")) return;
     try {
       const res = await fetch(`/api/kanban-columns/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        method: "DELETE"
       });
       if (res.ok) {
         await fetchColumns();
@@ -97,7 +92,6 @@ export default function BoardStagesSettings() {
       const res = await fetch(`/api/kanban-columns/${id}`, {
         method: "PUT",
         headers: { 
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ title: editingTitle })
@@ -141,7 +135,6 @@ export default function BoardStagesSettings() {
       await fetch("/api/kanban-columns", {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({ columns: cols })

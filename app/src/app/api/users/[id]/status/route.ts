@@ -3,14 +3,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth } from "@/lib/auth";
 
-export const PUT = withAuth(async (req: NextRequest, user: any) => {
+export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
   // Only admins can activate/deactivate users
-  if (user.role !== 'ADMIN') {
+  const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+  
+  if (dbUser?.role !== 'ADMIN') {
     return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 403 });
   }
 
   try {
-    const id = req.nextUrl.pathname.split('/').slice(-2, -1)[0];
+    const { id } = await params;
     const userId = parseInt(id);
 
     if (isNaN(userId)) {

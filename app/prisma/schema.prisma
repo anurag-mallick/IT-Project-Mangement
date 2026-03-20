@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 // Role: ADMIN, STAFF
@@ -26,13 +26,19 @@ enum TicketPriority {
   P3
 }
 
+enum UserRole {
+  ADMIN
+  STAFF
+  USER
+}
+
 model User {
   id           Int           @id @default(autoincrement())
   username     String        @unique
   email        String        @unique
   password     String
   name         String?
-  role         String        @default("STAFF")
+  role         UserRole      @default(STAFF)
   isActive     Boolean       @default(true)
   tickets      Ticket[]      @relation("AssignedTickets")
   comments     Comment[]
@@ -110,6 +116,8 @@ model ActivityLog {
   oldValue  String?
   newValue  String?
   createdAt DateTime @default(now())
+
+  @@index([ticketId])
 }
 
 model SavedView {

@@ -18,7 +18,13 @@ export const GET = withAuth(async (req: NextRequest, user: any) => {
 export const POST = withAuth(async (req: NextRequest, user: any) => {
   try {
     // Only Admin can create new stages
-    if (user.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { role: true }
+    });
+    if (dbUser?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const body = await req.json();
     const { title, order } = body;
@@ -40,7 +46,13 @@ export const POST = withAuth(async (req: NextRequest, user: any) => {
 
 export const PUT = withAuth(async (req: NextRequest, user: any) => {
   try {
-    if (user.role !== 'ADMIN') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      const dbUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      select: { role: true }
+    });
+    if (dbUser?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const body = await req.json();
     const { columns } = body; // Array of { id, order, title }

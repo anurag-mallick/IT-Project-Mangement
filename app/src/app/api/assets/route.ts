@@ -21,7 +21,11 @@ export const GET = withAuth(async (req: NextRequest, user: any) => {
 });
 
 export const POST = withAuth(async (req: NextRequest, user: any) => {
-  if (user.role !== "ADMIN" && user.role !== "STAFF") {
+    const dbUser = await prisma.user.findUnique({
+    where: { email: user.email },
+    select: { role: true }
+  });
+  if (dbUser?.role !== 'ADMIN' && dbUser?.role !== 'STAFF') {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

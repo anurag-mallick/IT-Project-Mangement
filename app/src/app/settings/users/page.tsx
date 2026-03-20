@@ -6,7 +6,7 @@ import { User } from '@/types';
 import NewUserModal from '@/components/NewUserModal';
 
 export default function UserManagementPage() {
-  const { token, user: currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,14 +16,11 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [token]);
+  }, []);
 
   const fetchUsers = async () => {
-    if (!token) return;
     try {
-      const res = await fetch('/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch('/api/users');
       if (res.ok) {
         setUsers(await res.json());
       } else {
@@ -38,7 +35,6 @@ export default function UserManagementPage() {
   };
 
   const updateUserRole = async (userId: number, newRole: string) => {
-    if (!token) return;
     setUpdating(userId.toString());
     setError('');
     setSuccess('');
@@ -47,8 +43,7 @@ export default function UserManagementPage() {
       const res = await fetch(`/api/users/${userId}/role`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ role: newRole })
       });
@@ -68,15 +63,13 @@ export default function UserManagementPage() {
   };
 
   const resetPassword = async (userId: number) => {
-    if (!token) return;
     setUpdating(userId.toString());
     setError('');
     setSuccess('');
 
     try {
       const res = await fetch(`/api/users/${userId}/reset-password`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        method: 'POST'
       });
       
       if (res.ok) {
@@ -93,7 +86,6 @@ export default function UserManagementPage() {
   };
   
   const toggleUserStatus = async (userId: number, currentStatus: boolean) => {
-    if (!token) return;
     setUpdating(userId.toString());
     setError('');
     setSuccess('');
@@ -102,8 +94,7 @@ export default function UserManagementPage() {
       const res = await fetch(`/api/users/${userId}/status`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ isActive: !currentStatus })
       });
@@ -125,7 +116,7 @@ export default function UserManagementPage() {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, fetchUsers]);
+  }, []);
 
   if (loading) return <div className="flex h-64 items-center justify-center"><Loader2 className="animate-spin text-indigo-500" /></div>;
 

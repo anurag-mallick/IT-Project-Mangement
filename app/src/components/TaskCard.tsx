@@ -10,66 +10,85 @@ interface TaskCardProps {
   onMove?: (status: TicketStatus) => void;
 }
 
-const priorityConfig: Record<string, { bg: string; text: string; label: string }> = {
-  P0: { bg: 'bg-red-500/20',    text: 'text-red-400',    label: 'P0 – Critical' },
-  P1: { bg: 'bg-orange-500/20', text: 'text-orange-400', label: 'P1 – High' },
-  P2: { bg: 'bg-indigo-500/20', text: 'text-indigo-400', label: 'P2 – Normal' },
-  P3: { bg: 'bg-zinc-500/20',   text: 'text-zinc-400',   label: 'P3 – Low' },
+const priorityConfig: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  P0: { bg: 'bg-red-500/10',    text: 'text-red-400',    border: 'border-l-red-500',    label: 'P0 – Critical' },
+  P1: { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-l-orange-500', label: 'P1 – High' },
+  P2: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-l-indigo-500', label: 'P2 – Normal' },
+  P3: { bg: 'bg-zinc-500/10',   text: 'text-zinc-400',   border: 'border-l-zinc-600',   label: 'P3 – Low' },
 };
 
 const TaskCard = ({ ticket, onDragStart, onClick }: TaskCardProps) => {
   const priority = priorityConfig[ticket.priority] ?? priorityConfig.P2;
-  const completedTasks = ticket.tasks?.filter((t: Task) => t.status === 'DONE').length ?? 0;
-  const totalTasks = ticket.tasks?.length ?? 0;
+  const commentCount = ticket._count?.comments ?? ticket.comments?.length ?? 0;
+  const checklistCount = ticket._count?.checklists ?? ticket.checklists?.length ?? 0;
 
   return (
     <div
       draggable
       onDragStart={onDragStart}
       onClick={onClick}
-      className="bg-zinc-900 border border-white/5 rounded-xl p-4 shadow-sm hover:shadow-xl hover:border-indigo-500/30 transition-all cursor-grab active:cursor-grabbing group"
+      className={`
+        bg-zinc-900 rounded-xl border border-white/5
+        hover:border-white/15 hover:bg-zinc-800/80
+        transition-all duration-150 cursor-pointer group
+        border-l-4 ${priority.border}
+      `}
     >
-      {/* Priority & ID */}
-      <div className="flex justify-between items-start mb-3">
+      {/* Top row: priority badge + ticket ID + SLA warning if breached */}
+      <div className="flex items-center justify-between px-3 pt-3 pb-1">
         <div className="flex items-center gap-2">
-          <span className={`text-[9px] font-black tracking-tighter uppercase px-1.5 py-0.5 rounded ${priority.bg} ${priority.text}`}>
+          <span className={`text-[9px] font-black tracking-widest uppercase px-1.5 py-0.5 rounded ${priority.bg} ${priority.text}`}>
             {ticket.priority}
           </span>
           <span className="text-[9px] text-white/20 font-mono">#{ticket.id}</span>
         </div>
-        {ticket.assignedTo && (
-          <div className="w-5 h-5 rounded-full bg-linear-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] font-bold border border-zinc-900" title={ticket.assignedTo.name || 'Unassigned'}>
-            {(ticket.assignedTo.name || ticket.assignedTo.username || '?')[0].toUpperCase()}
-          </div>
-        )}
+        <div className="flex items-center gap-1.5">
+          {ticket.slaBreachAt && new Date(ticket.slaBreachAt) < new Date() && (
+            <span className="text-[9px] font-bold text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+              SLA
+            </span>
+          )}
+          {ticket.assignedTo && (
+            <div
+              className="w-5 h-5 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-[8px] font-bold border border-zinc-900"
+              title={ticket.assignedTo.name || ticket.assignedTo.username}
+            >
+              {(ticket.assignedTo.name || ticket.assignedTo.username || '?')[0].toUpperCase()}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Title */}
-      <h4 className="text-xs font-semibold text-white/90 leading-relaxed mb-3 group-hover:text-white transition-colors line-clamp-2">
+      {/* Title — larger, more prominent */}
+      <h4 className="px-3 pb-2 text-sm font-semibold text-white/90 leading-snug group-hover:text-white transition-colors line-clamp-2">
         {ticket.title}
       </h4>
 
-      {/* Footer */}
-      <div className="pt-3 border-t border-white/5 flex items-center gap-4 text-white/20">
-        {(ticket.comments?.length ?? 0) > 0 && (
-          <div className="flex items-center gap-1">
-            <MessageSquare size={11} />
-            <span className="text-[10px]">{ticket.comments!.length}</span>
-          </div>
-        )}
-        {totalTasks > 0 && (
-          <div className="flex items-center gap-1">
-            <CheckSquare size={11} />
-            <span className="text-[10px]">{completedTasks}/{totalTasks}</span>
-          </div>
-        )}
-        {ticket.slaBreachAt && new Date(ticket.slaBreachAt) < new Date() && (
-          <div className="flex items-center gap-1 text-red-400/70">
-            <Clock size={11} />
-            <span className="text-[10px]">SLA</span>
-          </div>
-        )}
-      </div>
+      {/* Footer: comments count + checklist progress + due date */}
+      {(commentCount > 0 || checklistCount > 0 || ticket.dueDate) && (
+        <div className="px-3 pb-3 pt-1 border-t border-white/5 flex items-center gap-3 text-white/25 mt-1">
+          {commentCount > 0 && (
+            <div className="flex items-center gap-1">
+              <MessageSquare size={10} />
+              <span className="text-[10px]">{commentCount}</span>
+            </div>
+          )}
+          {checklistCount > 0 && (
+            <div className="flex items-center gap-1">
+              <CheckSquare size={10} />
+              <span className="text-[10px]">{checklistCount}</span>
+            </div>
+          )}
+          {ticket.dueDate && (
+            <div className={`flex items-center gap-1 ml-auto text-[10px] font-mono ${
+              new Date(ticket.dueDate) < new Date() ? 'text-red-400/70' : 'text-white/25'
+            }`}>
+              <Clock size={10} />
+              {new Date(ticket.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

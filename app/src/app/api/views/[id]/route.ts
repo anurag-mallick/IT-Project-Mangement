@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth';
 
-export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: { params: { id: string } }) => {
+export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
   try {
-    const viewId = parseInt(params.id);
+    const { id } = await params;
+    const viewId = parseInt(id);
     if (isNaN(viewId)) {
         return NextResponse.json({ error: 'Invalid view ID' }, { status: 400 });
     }

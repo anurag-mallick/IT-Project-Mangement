@@ -54,37 +54,57 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
       }
     });
 
-    const changes = [];
+    const logs = [];
     if (status && status !== currentTicket.status) {
-      changes.push(`status from **${currentTicket.status}** to **${status}**`);
+      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'STATUS_CHANGE', field: 'status', oldValue: currentTicket.status, newValue: status });
     }
     if (priority && priority !== currentTicket.priority) {
-      changes.push(`priority from **${currentTicket.priority}** to **${priority}**`);
+      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'PRIORITY_CHANGE', field: 'priority', oldValue: currentTicket.priority, newValue: priority });
     }
-    if (dueDate && new Date(dueDate).toISOString() !== currentTicket.dueDate?.toISOString()) {
-      changes.push(`due date to **${new Date(dueDate).toLocaleDateString()}**`);
+    if (dueDate !== undefined && new Date(dueDate).toISOString() !== currentTicket.dueDate?.toISOString()) {
+      logs.push({ 
+        ticketId: parseInt(id), 
+        userId: dbUser?.id, 
+        action: 'DUE_DATE_CHANGE', 
+        field: 'dueDate', 
+        oldValue: currentTicket.dueDate ? currentTicket.dueDate.toISOString() : null, 
+        newValue: dueDate ? new Date(dueDate).toISOString() : null 
+      });
+    }
+    if (title !== undefined && title !== currentTicket.title) {
+      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'TITLE_CHANGE', field: 'title', oldValue: currentTicket.title, newValue: title });
+    }
+    if (description !== undefined && description !== currentTicket.description) {
+      logs.push({ 
+        ticketId: parseInt(id), 
+        userId: dbUser?.id, 
+        action: 'DESCRIPTION_CHANGE', 
+        field: 'description', 
+        oldValue: null, 
+        newValue: description ? description.substring(0, 120) + (description.length > 120 ? '...' : '') : null 
+      });
+    }
+    if (tags !== undefined && JSON.stringify(tags) !== JSON.stringify(currentTicket.tags)) {
+      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'TAGS_CHANGE', field: 'tags', oldValue: currentTicket.tags.join(', '), newValue: tags.join(', ') });
+    }
+    if ('assignedToId' in body && assignedToId !== currentTicket.assignedToId) {
+      const oldUser = currentTicket.assignedToId ? await prisma.user.findUnique({ where: { id: currentTicket.assignedToId }, select: { name: true, username: true } }) : null;
+      const newUser = assignedToId ? await prisma.user.findUnique({ where: { id: parseInt(assignedToId) }, select: { name: true, username: true } }) : null;
+      
+      logs.push({ 
+        ticketId: parseInt(id), 
+        userId: dbUser?.id, 
+        action: 'ASSIGNMENT_CHANGE', 
+        field: 'assignedToId', 
+        oldValue: oldUser ? (oldUser.name || oldUser.username) : null, 
+        newValue: newUser ? (newUser.name || newUser.username) : null 
+      });
     }
 
-    if (changes.length > 0) {
-      // User already fetched concurrently at start
-      const logs = [];
-      if (status && status !== currentTicket.status) {
-        logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'STATUS_CHANGE', field: 'status', oldValue: currentTicket.status, newValue: status });
-      }
-      if (priority && priority !== currentTicket.priority) {
-        logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'PRIORITY_CHANGE', field: 'priority', oldValue: currentTicket.priority, newValue: priority });
-      }
-      if ('assignedToId' in body && assignedToId !== currentTicket.assignedToId) {
-        logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'ASSIGNMENT_CHANGE', field: 'assignedToId', oldValue: currentTicket.assignedToId ? String(currentTicket.assignedToId) : null, newValue: assignedToId ? String(assignedToId) : null });
-      }
-
-      if (logs.length > 0) {
-        await prisma.activityLog.createMany({
-          data: logs
-        });
-        
-        // Redundant comment creation removed, activityLog handles it
-      }
+    if (logs.length > 0) {
+      await prisma.activityLog.createMany({
+        data: logs
+      });
     }
 
     // Run Automations

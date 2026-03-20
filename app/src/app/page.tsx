@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import KanbanBoard from '@/components/KanbanBoard';
 import ListBoard from '@/components/ListBoard';
 import dynamic from 'next/dynamic';
+import Toast from '@/components/Toast';
+import { X, Save } from 'lucide-react';
 
 const ReportsView = dynamic(() => import('@/components/ReportsView'), { ssr: false });
 const CalendarView = dynamic(() => import('@/components/CalendarView'), { ssr: false });
@@ -21,10 +23,14 @@ const Dashboard = () => {
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [savedViewsRefreshKey, setSavedViewsRefreshKey] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [staff, setStaff] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
+  const [toast, setToast] = useState<{message: string; type: 'success'|'error'} | null>(null);
+  const [showSaveViewPanel, setShowSaveViewPanel] = useState(false);
+  const [newViewName, setNewViewName] = useState("");
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -38,7 +44,7 @@ const Dashboard = () => {
     fetch('/api/assets').then(res => res.ok && res.json()).then(data => { if(data) setAssets(data) }).catch(console.error);
   }, []);
 
-  const handleTicketCreated = () => setRefreshKey(k => k + 1);
+  const handleTicketCreated = () => setRefreshKey((k: number) => k + 1);
 
   useKeyboardShortcuts({
     'n': () => setIsModalOpen(true),
@@ -46,7 +52,6 @@ const Dashboard = () => {
     'k': () => setActiveView('kanban'),
     'l': () => setActiveView('list'),
     '/': () => {
-        // Find the global search input and focus it
         const searchInput = document.getElementById('global-search') as HTMLInputElement;
         if (searchInput) {
            searchInput.focus();
@@ -54,6 +59,30 @@ const Dashboard = () => {
         }
     }
   });
+
+  const handleSaveViewSource = async () => {
+    if (!newViewName.trim()) return;
+    const query = { view: activeView, search: debouncedSearchQuery };
+    try {
+      const res = await fetch('/api/views', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: newViewName, query })
+      });
+      if (res.ok) {
+        setToast({ message: 'View saved successfully!', type: 'success' });
+        setSavedViewsRefreshKey((k: number) => k + 1);
+        setShowSaveViewPanel(false);
+        setNewViewName("");
+      }
+      else {
+        setToast({ message: 'Failed to save view.', type: 'error' });
+      }
+    } catch (e) {
+      console.error(e);
+      setToast({ message: 'Failed to save view.', type: 'error' });
+    }
+  };
 
   return (
     <AuthGuard>
@@ -68,9 +97,9 @@ const Dashboard = () => {
           }}
           isMobileOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
+          refreshKey={savedViewsRefreshKey}
         />
 
-        {/* Mobile Overlay */}
         {isMobileMenuOpen && (
           <div 
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
@@ -88,27 +117,39 @@ const Dashboard = () => {
           />
           
           <div className="px-4 md:px-8 pb-4 pt-4 md:pt-0 max-w-7xl mx-auto w-full flex justify-end">
-             <button 
-                onClick={async () => {
-                  const name = window.prompt("Enter a name for this saved view:");
-                  if (!name) return;
-                  const query = { view: activeView, search: debouncedSearchQuery };
-                  try {
-                    const res = await fetch('/api/views', {
-                      method: 'POST',
-                      headers: {'Content-Type': 'application/json'},
-                      body: JSON.stringify({ name, query })
-                    });
-                    if (res.ok) alert("View saved successfully!");
-                    else alert("Failed to save view.");
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }}
-                className="text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-3 py-1.5 rounded-lg font-bold transition-all"
-             >
-                Save Current View
-             </button>
+             {showSaveViewPanel ? (
+               <div className="flex items-center gap-2 bg-zinc-900 border border-white/5 p-1 rounded-xl shadow-2xl animate-in slide-in-from-right-2">
+                 <input 
+                  autoFocus
+                  type="text"
+                  placeholder="View Name"
+                  value={newViewName}
+                  onChange={e => setNewViewName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSaveViewSource()}
+                  className="bg-transparent border-none text-xs px-2 py-1 focus:outline-none text-white w-40"
+                 />
+                 <button 
+                  onClick={handleSaveViewSource}
+                  disabled={!newViewName.trim()}
+                  className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all disabled:opacity-50"
+                 >
+                   <Save size={12} />
+                 </button>
+                 <button 
+                  onClick={() => setShowSaveViewPanel(false)}
+                  className="p-1.5 hover:bg-white/5 text-white/40 rounded-lg transition-all"
+                 >
+                   <X size={12} />
+                 </button>
+               </div>
+             ) : (
+               <button 
+                  onClick={() => setShowSaveViewPanel(true)}
+                  className="text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-3 py-1.5 rounded-lg font-bold transition-all"
+               >
+                  Save Current View
+               </button>
+             )}
           </div>
 
           <div className="px-4 md:px-8 max-w-7xl mx-auto w-full pb-8">
@@ -131,6 +172,7 @@ const Dashboard = () => {
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
       />
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </AuthGuard>
   );
 };
