@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth, SessionUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { uploadAttachment } from '@/lib/storage';
 
 export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
   try {
@@ -43,28 +43,11 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
       return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
     }
 
-    const supabase = await createClient();
-    const timestamp = Date.now();
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `tickets/${ticketId}/${timestamp}-${sanitizedFileName}`;
+    // Use the generic upload function from our storage library
+    const storageResult = await uploadAttachment(ticketId, file);
+    const publicUrl = storageResult.path; // Or a real URL if storage is enabled
+    const storagePath = `tickets/${ticketId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
 
-    const { data: uploadData, error: uploadError } = await supabase
-      .storage
-      .from('attachments')
-      .upload(storagePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (uploadError) {
-      console.error('Supabase Storage Upload Error:', uploadError);
-      return NextResponse.json({ error: 'Failed to upload to storage' }, { status: 500 });
-    }
-
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from('attachments')
-      .getPublicUrl(storagePath);
 
     // Save the public URL as filePath in the Attachment DB record
     const attachment = await prisma.attachment.create({
