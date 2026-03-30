@@ -28,8 +28,7 @@ export async function runAutomations(trigger: TriggerEvent, ticket: Ticket) {
           if (field === 'status' && (ticket as any).status !== value) conditionMet = false;
           if (field === 'tags' && !(ticket as any).tags?.includes(value)) conditionMet = false;
         } catch (e) {
-          // Fix 7: Log the automation ID and field that failed parsing
-          console.error(`Automation [ID: ${auto.id}] condition parse error:`, e);
+          console.error("Condition parse error", e);
           conditionMet = false;
         }
       }
@@ -48,8 +47,7 @@ export async function runAutomations(trigger: TriggerEvent, ticket: Ticket) {
             dataToUpdate.priority = value;
           }
         } catch (e) {
-          // Fix 7: Log the automation ID and field that failed parsing
-          console.error(`Automation [ID: ${auto.id}] action parse error:`, e);
+          console.error("Action parse error", e);
         }
       }
     }

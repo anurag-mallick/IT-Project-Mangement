@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, SessionUser } from "@/lib/auth";
 import bcrypt from 'bcryptjs';
+import { sendTicketEmail } from "@/lib/email";
 
 async function getUsersHandler(req: NextRequest, user: SessionUser) {
   try {
@@ -58,6 +59,15 @@ async function createUserHandler(req: NextRequest, user: SessionUser) {
         isActive: true
       }
     });
+
+    // Send Welcome Email
+    if (newUser.email) {
+      await sendTicketEmail({
+        type: 'USER_CREATED',
+        recipient: { email: newUser.email, name: newUser.name || 'User' },
+        password: passwordToHash
+      });
+    }
 
     return NextResponse.json(newUser, { status: 201 });
   } catch (error: any) {

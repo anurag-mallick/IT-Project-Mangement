@@ -48,7 +48,7 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
       where: { id: parseInt(id) },
       data,
       include: { 
-        assignedTo: { select: { id: true, username: true, name: true } },
+        assignedTo: { select: { id: true, username: true, name: true, email: true } },
         checklists: { orderBy: { createdAt: 'asc' } },
         asset: true
       }
@@ -112,22 +112,23 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
 
     // Send assignment email if assignee changed
     if (data.assignedToId && data.assignedToId !== currentTicket.assignedToId) {
-      const assigneeUser = await prisma.user.findUnique({ where: { id: data.assignedToId } });
-      if (assigneeUser && assigneeUser.username) {
+      const recipientEmail = (updatedTicket.assignedTo as any)?.email || updatedTicket.assignedTo?.username;
+      if (recipientEmail) {
         await sendTicketEmail({
           type: 'ASSIGNED',
           ticket: autoUpdatedTicket as any,
-          recipient: { email: assigneeUser.email ?? assigneeUser.username, name: assigneeUser.name || 'User' }
+          recipient: { email: recipientEmail, name: updatedTicket.assignedTo?.name || 'User' }
         });
       }
     } else if (data.status && data.status !== currentTicket.status) {
        // Send status update email if no new assignment, but status changed
-       const userToNotify = currentTicket.assignedToId ? await prisma.user.findUnique({ where: { id: currentTicket.assignedToId } }) : null;
-       if (userToNotify && userToNotify.username) {
+       const userToNotify = updatedTicket.assignedTo;
+       const recipientEmail = (userToNotify as any)?.email || userToNotify?.username;
+       if (recipientEmail) {
          await sendTicketEmail({
             type: data.status === 'RESOLVED' ? 'RESOLVED' : 'UPDATED',
             ticket: autoUpdatedTicket as any,
-            recipient: { email: userToNotify.email ?? userToNotify.username, name: userToNotify.name || 'User' }
+            recipient: { email: recipientEmail, name: userToNotify?.name || 'User' }
          });
        }
     }

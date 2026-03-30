@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth, SessionUser } from '@/lib/auth';
-import { Resend } from 'resend';
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+import { sendTicketEmail } from '@/lib/email';
 
 export const GET = withAuth(async (req: NextRequest, _user: SessionUser, { params }: { params: Promise<{ id: string }> }) => {
   try {
@@ -78,48 +76,57 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser, { param
       }
     });
 
-    // 2. Parse @mentions
-    // Look for @username
-    const mentionRegex = /@([a-zA-Z0-9_\-\.]+)/g;
-    const matches = [...content.matchAll(mentionRegex)];
-    const mentionedUsernames = matches.map(m => m[1]);
+    // 3. Send Notifications
+    const notificationPromises = [];
 
-    if (mentionedUsernames.length > 0) {
-      // Find the associated users
-      const mentionedUsers = await prisma.user.findMany({
-        where: {
-          username: { in: mentionedUsernames }
-        },
-        select: { email: true, name: true, username: true }
-      });
+    // Notify ticket assignee about new comment
+    const ticketWithAssignee = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { assignedTo: { select: { id: true, name: true, username: true, email: true } } }
+    });
 
-      // 3. Send Emails via Resend
-      if (process.env.RESEND_API_KEY && resend && mentionedUsers.length > 0) {
-         try {
-             // Send an email to each mentioned user
-             const emailPromises = mentionedUsers.map(mentionedUser => {
-                 return resend.emails.send({
-                    from: 'Horizon IT <notifications@onboarding.resend.dev>', // Use a verified domain in production
-                    to: [mentionedUser.email],
-                    subject: `You were mentioned in Ticket #${ticketId}`,
-                    html: `
-                        <h2>You were mentioned by ${user.name || user.username}</h2>
-                        <p><strong>Ticket:</strong> ${comment.ticket?.title} (#${ticketId})</p>
-                        <hr />
-                        <p><strong>Comment:</strong></p>
-                        <p>${content}</p>
-                        <br />
-                        <p><a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?ticketId=${ticketId}">View Ticket</a></p>
-                    `
-                 });
-             });
-             
-             await Promise.allSettled(emailPromises);
-         } catch (emailError) {
-             console.error("Failed to send mention emails:", emailError);
-             // Don't fail the comment creation if email fails
-         }
+    if (ticketWithAssignee) {
+      const assigneeEmail = ticketWithAssignee.assignedTo?.email || ticketWithAssignee.assignedTo?.username;
+      if (assigneeEmail && ticketWithAssignee.assignedTo?.id !== user.id) {
+         notificationPromises.push(
+           sendTicketEmail({
+             type: 'NEW_COMMENT',
+             ticket: { id: ticketId, title: ticketWithAssignee.title } as any,
+             recipient: { email: assigneeEmail, name: ticketWithAssignee.assignedTo?.name || 'Assignee' },
+             comment: content
+           })
+         );
       }
+
+      // Parse @mentions
+      const mentionRegex = /@([a-zA-Z0-9_\-\.]+)/g;
+      const matches = [...content.matchAll(mentionRegex)];
+      const mentionedUsernames = matches.map(m => m[1]);
+
+      if (mentionedUsernames.length > 0) {
+        const mentionedUsers = await prisma.user.findMany({
+          where: { username: { in: mentionedUsernames } },
+          select: { id: true, name: true, username: true, email: true }
+        });
+
+        for (const mUser of mentionedUsers) {
+          const mEmail = mUser.email || mUser.username;
+          if (mEmail && mEmail !== assigneeEmail && mUser.username !== user.username) {
+            notificationPromises.push(
+              sendTicketEmail({
+                type: 'NEW_COMMENT',
+                ticket: { id: ticketId, title: ticketWithAssignee.title } as any,
+                recipient: { email: mEmail, name: mUser.name || 'User' },
+                comment: content
+              })
+            );
+          }
+        }
+      }
+    }
+
+    if (notificationPromises.length > 0) {
+      Promise.allSettled(notificationPromises);
     }
 
     return NextResponse.json(comment, { status: 201 });

@@ -78,7 +78,7 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
         tags: tags || [],
         slaBreachAt: slaBreachAt || undefined
       },
-      include: { assignedTo: { select: { id: true, username: true, name: true } } }
+      include: { assignedTo: { select: { id: true, username: true, name: true, email: true } } }
     });
 
     const dbUser = await prisma.user.findUnique({
@@ -96,19 +96,40 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
 
     const autoUpdatedTicket = await runAutomations('ON_TICKET_CREATED', ticket);
 
+    // 3. Send Notifications
+    const notificationPromises = [];
+
+    // Notify Assignee
+    const assigneeEmail = ticket.assignedTo?.email || ticket.assignedTo?.username;
+    if (assigneeEmail) {
+      notificationPromises.push(
+        sendTicketEmail({
+          type: 'ASSIGNED',
+          ticket: autoUpdatedTicket as any,
+          recipient: { email: assigneeEmail, name: ticket.assignedTo?.name || 'Assignee' }
+        })
+      );
+    }
+
+    // Notify Admins for P0
     if (validatedPriority === TicketPriority.P0) {
       const adminUsers = await prisma.user.findMany({ where: { role: 'ADMIN' } });
       for (const admin of adminUsers) {
-        // Fix 8: Use admin.email with admin.username as fallback
-        const recipientEmail = (admin as any).email || admin.username;
-        if (recipientEmail) {
-          await sendTicketEmail({
-            type: 'CREATED',
-            ticket: autoUpdatedTicket as any,
-            recipient: { email: recipientEmail, name: admin.name || 'Admin' }
-          });
+        const adminEmail = (admin as any).email || admin.username;
+        if (adminEmail && adminEmail !== assigneeEmail) {
+          notificationPromises.push(
+            sendTicketEmail({
+              type: 'CREATED',
+              ticket: autoUpdatedTicket as any,
+              recipient: { email: adminEmail, name: admin.name || 'Admin' }
+            })
+          );
         }
       }
+    }
+
+    if (notificationPromises.length > 0) {
+      Promise.allSettled(notificationPromises);
     }
 
     return NextResponse.json(autoUpdatedTicket);
