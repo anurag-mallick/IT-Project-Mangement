@@ -5,11 +5,21 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Shield, Mail, Lock, AlertCircle, Cpu, Zap, ShieldCheck, Globe, Github, Linkedin } from 'lucide-react';
 
-// Horizon IT Logo Component
+// TurboQuant Logo Component - AI Compression
 const HorizonLogo = ({ animate }: { animate: boolean }) => {
   return (
-    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-600/20 ${animate ? 'logo-animate' : ''}`}>
-      <Cpu size={24} className="text-white" />
+    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 ${animate ? 'logo-animate' : ''}`}>
+      <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2">
+        {/* Compression arrows */}
+        <path d="M4 12h16" className="text-white" />
+        <path d="M8 8l-4 4 4 4" className="text-white" />
+        <path d="M16 8l4 4-4 4" className="text-white" />
+        {/* AI neural network dots */}
+        <circle cx="12" cy="6" r="2" fill="currentColor" className="text-white" />
+        <circle cx="12" cy="18" r="2" fill="currentColor" className="text-white" />
+        <circle cx="8" cy="12" r="1.5" fill="currentColor" className="text-white opacity-70" />
+        <circle cx="16" cy="12" r="1.5" fill="currentColor" className="text-white opacity-70" />
+      </svg>
     </div>
   );
 };
