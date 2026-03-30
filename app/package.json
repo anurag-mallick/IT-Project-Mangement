@@ -23,7 +23,6 @@
     "@tailwindcss/postcss": "^4.2.1",
     "@tanstack/react-virtual": "^3.13.22",
     "@types/uuid": "^10.0.0",
-    "@vercel/blob": "^2.3.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

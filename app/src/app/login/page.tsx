@@ -15,11 +15,11 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      await refreshProfile();
+      refreshProfile(); // No await needed in useEffect callback
       router.push('/');
       router.refresh();
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, refreshProfile]);
 
   if (isLoading) return null;
 
@@ -82,7 +82,7 @@ export default function LoginPage() {
             <div className="flex items-center gap-2 text-white/60 text-sm font-bold uppercase tracking-widest">
               <ShieldCheck size={14} className="text-green-500" /> Enterprise Grade
             </div>
-            <p className="text-white/20 text-xs">Built on reliable Supabase architecture for 24/7 operations.</p>
+            <p className="text-white/20 text-xs">Built on reliable Neon architecture for 24/7 operations.</p>
           </div>
         </div>
       </div>
