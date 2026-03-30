@@ -3,7 +3,7 @@ import { simpleParser } from 'mailparser';
 import { prisma } from './prisma';
 
 export async function pollEmails() {
-  const keys = ['IMAP_HOST', 'IMAP_PORT', 'IMAP_USER', 'IMAP_PASS', 'IMAP_TICKET_FOLDER'];
+  const keys = ['IMAP_HOST', 'IMAP_PORT', 'IMAP_USER', 'IMAP_PASS', 'IMAP_TICKET_FOLDER', 'IMAP_SECURE'];
   const settings = await prisma.globalSetting.findMany({
     where: { key: { in: keys } }
   });
@@ -19,6 +19,7 @@ export async function pollEmails() {
     user: settingsMap.IMAP_USER || process.env.IMAP_USER || '',
     pass: settingsMap.IMAP_PASS || process.env.IMAP_PASS || '',
     folder: settingsMap.IMAP_TICKET_FOLDER || process.env.IMAP_TICKET_FOLDER || 'INBOX',
+    secure: settingsMap.IMAP_SECURE === 'true',
   };
 
   if (!config.host || !config.user) {
@@ -29,7 +30,7 @@ export async function pollEmails() {
   const client = new ImapFlow({
     host: config.host,
     port: config.port,
-    secure: true,
+    secure: config.secure,
     auth: {
       user: config.user,
       pass: config.pass,

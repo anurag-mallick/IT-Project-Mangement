@@ -1,24 +1,44 @@
 import nodemailer from 'nodemailer';
+import { prisma } from './prisma';
 
-let transporter: nodemailer.Transporter | null = null;
+async function getEmailConfig() {
+  const keys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'];
+  const settings = await prisma.globalSetting.findMany({
+    where: {
+      key: { in: keys }
+    }
+  });
 
-export function getTransporter() {
-  if (transporter) return transporter;
+  const config = settings.reduce((acc: Record<string, string>, s) => {
+    acc[s.key] = s.value;
+    return acc;
+  }, {});
 
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+  return {
+    host: config.SMTP_HOST || process.env.SMTP_HOST,
+    port: parseInt(config.SMTP_PORT || process.env.SMTP_PORT || '587'),
+    secure: (config.SMTP_SECURE || process.env.SMTP_SECURE) === 'true',
+    user: config.SMTP_USER || process.env.SMTP_USER,
+    pass: config.SMTP_PASS || process.env.SMTP_PASS,
+    from: config.SMTP_FROM || process.env.SMTP_FROM || `"Horizon IT" <${config.SMTP_USER || process.env.SMTP_USER}>`,
+  };
+}
+
+export async function getTransporter() {
+  const config = await getEmailConfig();
+
+  return nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: config.user,
+      pass: config.pass,
     },
     tls: {
       rejectUnauthorized: false
     }
   });
-
-  return transporter;
 }
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -64,9 +84,10 @@ function getBaseTemplate(title: string, content: string, actionUrl?: string, act
 
 export async function sendEmail(options: { to: string; subject: string; html: string }): Promise<void> {
   try {
-    const transporter = getTransporter();
+    const config = await getEmailConfig();
+    const transporter = await getTransporter();
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"Horizon IT" <${process.env.SMTP_USER}>`,
+      from: config.from,
       to: options.to,
       subject: options.subject,
       html: options.html,
