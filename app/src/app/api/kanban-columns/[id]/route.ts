@@ -13,19 +13,23 @@ export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { pa
   
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const { title } = await req.json();
     
     if (!title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    const col = await prisma.kanbanColumn.findUnique({ where: { id: parseInt(id) } });
+    const col = await prisma.kanbanColumn.findUnique({ where: { id: parsedId } });
     if (!col) {
       return NextResponse.json({ error: 'Column not found' }, { status: 404 });
     }
 
     const updated = await prisma.kanbanColumn.update({
-      where: { id: parseInt(id) },
+      where: { id: parsedId },
       data: { title: title.trim().toUpperCase().replace(/ /g, '_') }
     });
     
@@ -46,14 +50,18 @@ export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: {
   
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     
-    const col = await prisma.kanbanColumn.findUnique({ where: { id: parseInt(id) } });
+    const col = await prisma.kanbanColumn.findUnique({ where: { id: parsedId } });
     if (!col) {
       return NextResponse.json({ error: 'Column not found' }, { status: 404 });
     }
 
     await prisma.kanbanColumn.delete({
-      where: { id: parseInt(id) }
+      where: { id: parsedId }
     });
     
     return NextResponse.json({ success: true });

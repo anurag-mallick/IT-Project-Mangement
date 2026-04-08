@@ -12,9 +12,17 @@ if (globalForPrisma.prisma) {
   const connectionString = process.env.DATABASE_URL;
   
   if (connectionString) {
+    const sslConfig: any = { rejectUnauthorized: true };
+    
+    // Allow custom CA cert via environment variable if needed
+    if (process.env.DATABASE_CA_CERT) {
+      sslConfig.ca = process.env.DATABASE_CA_CERT;
+      sslConfig.rejectUnauthorized = false;
+    }
+    
     const pool = new Pool({ 
       connectionString,
-      ssl: { rejectUnauthorized: false }
+      ssl: sslConfig
     });
     const adapter = new PrismaPg(pool as any);
     prismaInstance = new PrismaClient({

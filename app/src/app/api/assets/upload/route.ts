@@ -45,9 +45,8 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
 
     // Use the generic upload function from our storage library
     const storageResult = await uploadAttachment(ticketId, file);
-    const publicUrl = storageResult.path; // Or a real URL if storage is enabled
-    const storagePath = `tickets/${ticketId}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-
+    const storagePath = storageResult.path;
+    const publicUrl = storageResult.path;
 
     // Save the public URL as filePath in the Attachment DB record
     const attachment = await prisma.attachment.create({
@@ -62,12 +61,11 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
     });
 
     return NextResponse.json({
-      path: storagePath, // We keep the storage path for reference if needed
       name: attachment.fileName,
       size: attachment.fileSize,
       type: attachment.mimeType,
       id: attachment.id,
-      publicUrl: publicUrl
+      url: publicUrl
     });
   } catch (err: unknown) {
     console.error('Upload error:', err);

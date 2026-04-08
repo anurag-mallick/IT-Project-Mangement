@@ -5,6 +5,10 @@ import { withAuth, SessionUser } from '@/lib/auth';
 export const PUT = withAuth(async (req: NextRequest, user: SessionUser, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const { role } = await req.json();
 
     // Fix 2: Verify role in DB instead of trusting JWT claim
@@ -22,14 +26,14 @@ export const PUT = withAuth(async (req: NextRequest, user: SessionUser, { params
     }
 
     const updated = await prisma.user.update({
-      where: { id: parseInt(id) },
+      where: { id: parsedId },
       data: { role }
     });
     
     const response = NextResponse.json({ id: updated.id, email: updated.email, role: updated.role });
     // Force log out if updating own role
-    if (parseInt(id) === parseInt(user.id)) {
-      response.cookies.set('session', '', { maxAge: 0, path: '/' });
+    if (parsedId === user.id) {
+      response.cookies.set('auth-token', '', { maxAge: 0, path: '/' });
     }
     return response;
   } catch (err: any) {

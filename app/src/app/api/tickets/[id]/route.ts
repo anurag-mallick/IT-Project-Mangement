@@ -1,19 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withAuth } from '@/lib/auth';
+import { withAuth, SessionUser } from '@/lib/auth';
 import { calculateSlaBreachTime } from '@/lib/sla';
 import { runAutomations } from '@/lib/automations';
 import { sendTicketEmail } from '@/lib/email';
+import { TicketStatus, TicketPriority } from '@/generated/prisma';
 
-export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
+export const PATCH = withAuth(async (req: NextRequest, user: SessionUser, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    
     const body = await req.json();
     const { status, priority, title, description, assignedToId, tags, dueDate, assetId } = body;
 
+    // Validate enums
+    if (status !== undefined && !Object.values(TicketStatus).includes(status)) {
+      return NextResponse.json({ error: 'Invalid status value' }, { status: 400 });
+    }
+    if (priority !== undefined && !Object.values(TicketPriority).includes(priority)) {
+      return NextResponse.json({ error: 'Invalid priority value' }, { status: 400 });
+    }
+
     const [currentTicket, dbUser] = await Promise.all([
       prisma.ticket.findUnique({
-        where: { id: parseInt(id) }
+        where: { id: parsedId }
       }),
       prisma.user.findUnique({ where: { email: user.email } })
     ]);
@@ -45,7 +57,7 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
     }
 
     const updatedTicket = await prisma.ticket.update({
-      where: { id: parseInt(id) },
+      where: { id: parsedId },
       data,
       include: { 
         assignedTo: { select: { id: true, username: true, name: true, email: true } },
@@ -56,14 +68,14 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
 
     const logs = [];
     if (status && status !== currentTicket.status) {
-      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'STATUS_CHANGE', field: 'status', oldValue: currentTicket.status, newValue: status });
+      logs.push({ ticketId: parsedId, userId: dbUser?.id, action: 'STATUS_CHANGE', field: 'status', oldValue: currentTicket.status, newValue: status });
     }
     if (priority && priority !== currentTicket.priority) {
-      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'PRIORITY_CHANGE', field: 'priority', oldValue: currentTicket.priority, newValue: priority });
+      logs.push({ ticketId: parsedId, userId: dbUser?.id, action: 'PRIORITY_CHANGE', field: 'priority', oldValue: currentTicket.priority, newValue: priority });
     }
     if (dueDate !== undefined && new Date(dueDate).toISOString() !== currentTicket.dueDate?.toISOString()) {
       logs.push({ 
-        ticketId: parseInt(id), 
+        ticketId: parsedId, 
         userId: dbUser?.id, 
         action: 'DUE_DATE_CHANGE', 
         field: 'dueDate', 
@@ -72,11 +84,11 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
       });
     }
     if (title !== undefined && title !== currentTicket.title) {
-      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'TITLE_CHANGE', field: 'title', oldValue: currentTicket.title, newValue: title });
+      logs.push({ ticketId: parsedId, userId: dbUser?.id, action: 'TITLE_CHANGE', field: 'title', oldValue: currentTicket.title, newValue: title });
     }
     if (description !== undefined && description !== currentTicket.description) {
       logs.push({ 
-        ticketId: parseInt(id), 
+        ticketId: parsedId, 
         userId: dbUser?.id, 
         action: 'DESCRIPTION_CHANGE', 
         field: 'description', 
@@ -85,14 +97,14 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
       });
     }
     if (tags !== undefined && JSON.stringify(tags) !== JSON.stringify(currentTicket.tags)) {
-      logs.push({ ticketId: parseInt(id), userId: dbUser?.id, action: 'TAGS_CHANGE', field: 'tags', oldValue: currentTicket.tags.join(', '), newValue: tags.join(', ') });
+      logs.push({ ticketId: parsedId, userId: dbUser?.id, action: 'TAGS_CHANGE', field: 'tags', oldValue: currentTicket.tags.join(', '), newValue: tags.join(', ') });
     }
     if ('assignedToId' in body && assignedToId !== currentTicket.assignedToId) {
       const oldUser = currentTicket.assignedToId ? await prisma.user.findUnique({ where: { id: currentTicket.assignedToId }, select: { name: true, username: true } }) : null;
       const newUser = assignedToId ? await prisma.user.findUnique({ where: { id: parseInt(assignedToId) }, select: { name: true, username: true } }) : null;
       
       logs.push({ 
-        ticketId: parseInt(id), 
+        ticketId: parsedId, 
         userId: dbUser?.id, 
         action: 'ASSIGNMENT_CHANGE', 
         field: 'assignedToId', 
@@ -112,8 +124,9 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
 
     // Send assignment email if assignee changed
     if (data.assignedToId && data.assignedToId !== currentTicket.assignedToId) {
-      const recipientEmail = (updatedTicket.assignedTo as any)?.email || updatedTicket.assignedTo?.username;
-      if (recipientEmail) {
+      const recipientEmail = (updatedTicket.assignedTo as any)?.email;
+      // Only send email if we have a valid email address
+      if (recipientEmail && recipientEmail.includes('@')) {
         await sendTicketEmail({
           type: 'ASSIGNED',
           ticket: autoUpdatedTicket as any,
@@ -123,8 +136,9 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
     } else if (data.status && data.status !== currentTicket.status) {
        // Send status update email if no new assignment, but status changed
        const userToNotify = updatedTicket.assignedTo;
-       const recipientEmail = (userToNotify as any)?.email || userToNotify?.username;
-       if (recipientEmail) {
+       const recipientEmail = (userToNotify as any)?.email;
+       // Only send email if we have a valid email address
+       if (recipientEmail && recipientEmail.includes('@')) {
          await sendTicketEmail({
             type: data.status === 'RESOLVED' ? 'RESOLVED' : 'UPDATED',
             ticket: autoUpdatedTicket as any,
@@ -138,9 +152,11 @@ export const PATCH = withAuth(async (req: NextRequest, user: any, { params }: { 
     return NextResponse.json({ error: 'Failed to update ticket' }, { status: 400 });
   }
 });
-export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: { params: Promise<{ id: string }> }) => {
+export const DELETE = withAuth(async (req: NextRequest, user: SessionUser, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     
     // Check if user is Admin
     const dbUser = await prisma.user.findUnique({
@@ -153,7 +169,7 @@ export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: {
     }
 
     await prisma.ticket.delete({
-      where: { id: parseInt(id) }
+      where: { id: parsedId }
     });
 
     return NextResponse.json({ success: true });

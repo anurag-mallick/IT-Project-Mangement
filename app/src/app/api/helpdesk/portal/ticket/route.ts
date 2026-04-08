@@ -10,11 +10,14 @@ export async function GET(req: NextRequest) {
 
     if (!email || !ticketId) return NextResponse.json({ error: 'Email and ticketId required' }, { status: 400 });
 
+    const parsedTicketId = parseInt(ticketId);
+    if (isNaN(parsedTicketId)) return NextResponse.json({ error: 'Invalid ticket ID' }, { status: 400 });
+
     const customer = await prisma.customer.findUnique({ where: { email: email.toLowerCase() } });
     if (!customer) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
 
     const ticket = await prisma.ticket.findFirst({
-      where: { id: parseInt(ticketId), customerId: customer.id },
+      where: { id: parsedTicketId, customerId: customer.id },
       include: {
         comments: { where: { isInternal: false }, orderBy: { createdAt: 'asc' } },
         communications: { orderBy: { createdAt: 'asc' }, select: { id: true, subject: true, content: true, direction: true, sender: true, senderName: true, createdAt: true } },

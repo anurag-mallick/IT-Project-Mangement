@@ -9,22 +9,25 @@ export async function POST(req: NextRequest) {
     if (!ticketId || !rating) return NextResponse.json({ error: 'Ticket ID and rating required' }, { status: 400 });
     if (rating < 1 || rating > 5) return NextResponse.json({ error: 'Rating must be 1-5' }, { status: 400 });
 
+    const parsedTicketId = parseInt(ticketId);
+    if (isNaN(parsedTicketId)) return NextResponse.json({ error: 'Invalid ticket ID' }, { status: 400 });
+
     const customer = email ? await prisma.customer.findUnique({ where: { email: email.toLowerCase() } }) : null;
     const ticket = await prisma.ticket.findFirst({
-      where: { id: parseInt(ticketId), ...(customer ? { customerId: customer.id } : {}) }
+      where: { id: parsedTicketId, ...(customer ? { customerId: customer.id } : {}) }
     });
 
     if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
 
-    const existing = await prisma.cSATSurvey.findUnique({ where: { ticketId: parseInt(ticketId) } });
+    const existing = await prisma.cSATSurvey.findUnique({ where: { ticketId: parsedTicketId } });
     if (existing) return NextResponse.json({ error: 'Feedback already submitted' }, { status: 400 });
 
     const survey = await prisma.cSATSurvey.create({
-      data: { ticketId: parseInt(ticketId), rating, feedback, employeeName }
+      data: { ticketId: parsedTicketId, rating, feedback, employeeName }
     });
 
     await prisma.ticket.update({
-      where: { id: parseInt(ticketId) },
+      where: { id: parsedTicketId },
       data: { feedbackRating: rating, feedbackComment: feedback }
     });
 

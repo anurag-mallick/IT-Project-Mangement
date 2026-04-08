@@ -1,4 +1,3 @@
-export const revalidate = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withAuth, SessionUser } from "@/lib/auth";

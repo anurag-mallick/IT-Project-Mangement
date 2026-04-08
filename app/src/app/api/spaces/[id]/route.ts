@@ -13,19 +13,23 @@ export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { pa
   
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const { name, description } = await req.json();
     
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Space name is required' }, { status: 400 });
     }
 
-    const space = await prisma.space.findUnique({ where: { id: parseInt(id) } });
+    const space = await prisma.space.findUnique({ where: { id: parsedId } });
     if (!space) {
       return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
 
     const updated = await prisma.space.update({
-      where: { id: parseInt(id) },
+      where: { id: parsedId },
       data: {
         name: name.trim(),
         description: description?.trim() || null
@@ -49,14 +53,18 @@ export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: {
   
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     
-    const space = await prisma.space.findUnique({ where: { id: parseInt(id) } });
+    const space = await prisma.space.findUnique({ where: { id: parsedId } });
     if (!space) {
       return NextResponse.json({ error: 'Space not found' }, { status: 404 });
     }
 
     await prisma.space.delete({
-      where: { id: parseInt(id) }
+      where: { id: parsedId }
     });
     
     return NextResponse.json({ success: true });

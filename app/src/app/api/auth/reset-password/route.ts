@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@/generated/prisma';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
     try {
@@ -22,12 +20,31 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Find the reset token in global settings
-        const resetSetting = await prisma.globalSetting.findFirst({
+        // Find the reset token in global settings by querying all and matching
+        const allResetSettings = await prisma.globalSetting.findMany({
             where: {
                 key: { startsWith: 'reset_token_' },
             },
         });
+
+        // Find the specific record that matches the token
+        let resetSetting = null;
+        for (const setting of allResetSettings) {
+            try {
+                const { token: storedToken, expiry } = JSON.parse(setting.value);
+                if (storedToken === token) {
+                    if (new Date() > new Date(expiry)) {
+                        // Clean up expired token
+                        await prisma.globalSetting.delete({ where: { key: setting.key } });
+                        return NextResponse.json({ error: 'Reset token has expired' }, { status: 400 });
+                    }
+                    resetSetting = setting;
+                    break;
+                }
+            } catch {
+                continue;
+            }
+        }
 
         if (!resetSetting) {
             return NextResponse.json(
@@ -36,29 +53,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { token: storedToken, expiry } = JSON.parse(resetSetting.value);
-
-        // Check if token matches and is not expired
-        if (storedToken !== token) {
-            return NextResponse.json(
-                { error: 'Invalid or expired reset token' },
-                { status: 400 }
-            );
-        }
-
-        if (new Date() > new Date(expiry)) {
-            // Clean up expired token
-            await prisma.globalSetting.delete({
-                where: { key: resetSetting.key },
-            });
-            return NextResponse.json(
-                { error: 'Reset token has expired' },
-                { status: 400 }
-            );
-        }
-
-        // Extract user ID from the key
         const userId = parseInt(resetSetting.key.replace('reset_token_', ''));
+        if (isNaN(userId)) {
+            return NextResponse.json({ error: 'Invalid reset token' }, { status: 400 });
+        }
 
         // Hash new password
         const hashedPassword = await bcrypt.hash(password, 10);

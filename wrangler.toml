@@ -1,7 +1,0 @@
-name = "it-project-management-tool"
-main = "src/index.ts"
-compatibility_date = "2024-03-10"
-
-# Cron Trigger for SLA check (every 5 minutes)
-[triggers]
-crons = ["*/5 * * * *"]

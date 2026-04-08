@@ -99,9 +99,9 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
     // 3. Send Notifications
     const notificationPromises = [];
 
-    // Notify Assignee
-    const assigneeEmail = ticket.assignedTo?.email || ticket.assignedTo?.username;
-    if (assigneeEmail) {
+    // Notify Assignee - only use email field, not username
+    const assigneeEmail = ticket.assignedTo?.email;
+    if (assigneeEmail && assigneeEmail.includes('@')) {
       notificationPromises.push(
         sendTicketEmail({
           type: 'ASSIGNED',
@@ -115,7 +115,7 @@ export const POST = withAuth(async (req: NextRequest, user: SessionUser) => {
     if (validatedPriority === TicketPriority.P0) {
       const adminUsers = await prisma.user.findMany({ where: { role: 'ADMIN' } });
       for (const admin of adminUsers) {
-        const adminEmail = (admin as any).email || admin.username;
+        const adminEmail = admin.email;
         if (adminEmail && adminEmail !== assigneeEmail) {
           notificationPromises.push(
             sendTicketEmail({

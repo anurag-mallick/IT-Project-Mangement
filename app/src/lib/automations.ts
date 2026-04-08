@@ -1,7 +1,11 @@
 import { prisma } from './prisma';
 import { Ticket } from '@/types';
+import { TicketStatus, TicketPriority } from '@/generated/prisma';
 
 export type TriggerEvent = 'ON_TICKET_CREATED' | 'ON_TICKET_UPDATED';
+
+const VALID_STATUSES = Object.values(TicketStatus);
+const VALID_PRIORITIES = Object.values(TicketPriority);
 
 export async function runAutomations(trigger: TriggerEvent, ticket: Ticket) {
   try {
@@ -40,11 +44,20 @@ export async function runAutomations(trigger: TriggerEvent, ticket: Ticket) {
           const { type, value } = action;
 
           if (type === 'ASSIGN_TO' && value) {
-            dataToUpdate.assignedToId = parseInt(value);
+            const parsedId = parseInt(value);
+            if (!isNaN(parsedId) && parsedId > 0) {
+              dataToUpdate.assignedToId = parsedId;
+            }
           } else if (type === 'SET_STATUS' && value) {
-            dataToUpdate.status = value;
+            // Validate status against enum
+            if (VALID_STATUSES.includes(value)) {
+              dataToUpdate.status = value;
+            }
           } else if (type === 'SET_PRIORITY' && value) {
-            dataToUpdate.priority = value;
+            // Validate priority against enum
+            if (VALID_PRIORITIES.includes(value)) {
+              dataToUpdate.priority = value;
+            }
           }
         } catch (e) {
           console.error("Action parse error", e);

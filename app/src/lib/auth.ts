@@ -22,13 +22,28 @@ export interface SessionUser {
   username?: string;
 }
 
+export interface JWTPayload {
+  email: string;
+  id: number;
+  role?: string;
+  iat: number;
+  exp: number;
+}
+
 /**
  * Verifies the JWT token and returns the payload.
  */
-export async function verifyToken(token: string) {
+export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload as any;
+    
+    // Validate the shape of the payload
+    if (!payload || typeof payload.email !== 'string' || typeof payload.id !== 'number') {
+      console.error('Invalid JWT payload shape');
+      return null;
+    }
+    
+    return payload as JWTPayload;
   } catch (err) {
     return null;
   }

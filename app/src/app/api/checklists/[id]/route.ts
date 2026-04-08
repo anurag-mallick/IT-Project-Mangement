@@ -5,6 +5,10 @@ import { withAuth, SessionUser } from '@/lib/auth';
 export const PATCH = withAuth(async (req: NextRequest, user: SessionUser, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const { isCompleted, title } = await req.json();
 
     const data: { isCompleted?: boolean; title?: string } = {};
@@ -12,7 +16,7 @@ export const PATCH = withAuth(async (req: NextRequest, user: SessionUser, { para
     if (title !== undefined) data.title = title;
 
     const item = await prisma.checklistItem.update({
-      where: { id: parseInt(id) },
+      where: { id: parsedId },
       data
     });
 
@@ -38,9 +42,13 @@ export const PATCH = withAuth(async (req: NextRequest, user: SessionUser, { para
 export const DELETE = withAuth(async (req: NextRequest, _user: SessionUser, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     
     await prisma.checklistItem.delete({
-      where: { id: parseInt(id) }
+      where: { id: parsedId }
     });
 
     return NextResponse.json({ success: true });

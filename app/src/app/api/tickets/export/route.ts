@@ -2,11 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUser } from '@/lib/auth';
 
+const MAX_EXPORT_ROWS = 10000;
+
 export async function GET(request: NextRequest) {
     try {
         const sessionUser = await getUser();
         if (!sessionUser) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Verify admin role from database
+        const dbUser = await prisma.user.findUnique({
+            where: { email: sessionUser.email },
+            select: { role: true }
+        });
+        if (dbUser?.role !== 'ADMIN') {
+            return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
         }
 
         const { searchParams } = new URL(request.url);
@@ -18,7 +29,13 @@ export async function GET(request: NextRequest) {
         const where: any = {};
         if (status) where.status = status;
         if (priority) where.priority = priority;
-        if (assignedToId) where.assignedToId = parseInt(assignedToId);
+        if (assignedToId) {
+            const parsedAssignedToId = parseInt(assignedToId);
+            if (isNaN(parsedAssignedToId)) {
+                return NextResponse.json({ error: 'Invalid assignedToId' }, { status: 400 });
+            }
+            where.assignedToId = parsedAssignedToId;
+        }
 
         const tickets = await prisma.ticket.findMany({
             where,
@@ -42,6 +59,7 @@ export async function GET(request: NextRequest) {
                 },
             },
             orderBy: { createdAt: 'desc' },
+            take: MAX_EXPORT_ROWS,
         });
 
         if (format === 'csv') {

@@ -10,12 +10,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email, ticketId, message required' }, { status: 400 });
     }
 
+    const parsedTicketId = parseInt(ticketId);
+    if (isNaN(parsedTicketId)) return NextResponse.json({ error: 'Invalid ticket ID' }, { status: 400 });
+
     const customer = await prisma.customer.findUnique({ where: { email: email.toLowerCase() } });
     if (!customer) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     if (customer.isBlocked) return NextResponse.json({ error: 'Your email is blocked' }, { status: 403 });
 
     const ticket = await prisma.ticket.findFirst({
-      where: { id: parseInt(ticketId), customerId: customer.id },
+      where: { id: parsedTicketId, customerId: customer.id },
       include: { communications: { orderBy: { createdAt: 'desc' }, take: 1 } }
     });
 

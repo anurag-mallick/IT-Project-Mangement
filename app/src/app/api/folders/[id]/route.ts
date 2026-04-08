@@ -13,19 +13,23 @@ export const PUT = withAuth(async (req: NextRequest, user: any, { params }: { pa
   
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     const { name } = await req.json();
     
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Folder name is required' }, { status: 400 });
     }
 
-    const folder = await prisma.folder.findUnique({ where: { id: parseInt(id) } });
+    const folder = await prisma.folder.findUnique({ where: { id: parsedId } });
     if (!folder) {
       return NextResponse.json({ error: 'Folder not found' }, { status: 404 });
     }
 
     const updated = await prisma.folder.update({
-      where: { id: parseInt(id) },
+      where: { id: parsedId },
       data: { name: name.trim() }
     });
     
@@ -46,14 +50,18 @@ export const DELETE = withAuth(async (req: NextRequest, user: any, { params }: {
   
   try {
     const { id } = await params;
+    const parsedId = parseInt(id);
+    if (isNaN(parsedId)) {
+      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    }
     
-    const folder = await prisma.folder.findUnique({ where: { id: parseInt(id) } });
+    const folder = await prisma.folder.findUnique({ where: { id: parsedId } });
     if (!folder) {
       return NextResponse.json({ error: 'Folder not found' }, { status: 404 });
     }
 
     await prisma.folder.delete({
-      where: { id: parseInt(id) }
+      where: { id: parsedId }
     });
     
     return NextResponse.json({ success: true });
