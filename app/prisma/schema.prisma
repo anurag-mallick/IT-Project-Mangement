@@ -46,6 +46,11 @@ model User {
   activityLogs ActivityLog[]
   savedViews   SavedView[] @relation("UserSavedViews")
   assets       Asset[]
+  teams        Team[]        @relation("TeamAgents")
+  savedReplies SavedReply[]
+  kbArticles   KnowledgeBaseArticle[]
+  timeEntries  TicketTimeEntry[]
+  reports      Report[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -57,21 +62,45 @@ model Ticket {
   status        TicketStatus @default(TODO)
   priority      TicketPriority @default(P2)
   requesterName String?
+  requesterEmail String?
   assignedTo    User?        @relation("AssignedTickets", fields: [assignedToId], references: [id])
   assignedToId  Int?
   slaBreachAt   DateTime?
+  responseBy    DateTime?
+  resolutionBy  DateTime?
+  firstResponseAt DateTime?
+  slaPausedAt   DateTime?
+  slaPauseCount Int        @default(0)
   dueDate       DateTime?
   timeSpent     Int          @default(0)
   folder        Folder?      @relation(fields: [folderId], references: [id])
   folderId      Int?
+  team          Team?        @relation(fields: [teamId], references: [id])
+  teamId        Int?
   asset         Asset?       @relation(fields: [assetId], references: [id])
   assetId       Int?
+  serviceCategory ServiceCategory? @relation(fields: [serviceCategoryId], references: [id])
+  serviceCategoryId Int?
+  customer      Customer?    @relation(fields: [customerId], references: [id])
+  customerId    Int?
+  emailAccount  EmailAccount? @relation(fields: [emailAccountId], references: [id])
+  emailAccountId Int?
   tags          String[]
+  ticketType    String      @default("INCIDENT")
+  resolution    String?
+  feedbackRating Int?
+  feedbackComment String?
+  viaCustomerPortal Boolean @default(false)
+  slaResponseBreached Boolean @default(false)
+  slaResolutionBreached Boolean @default(false)
   tasks         Task[]
   checklists    ChecklistItem[]
   comments      Comment[]
   attachments   Attachment[]
   activityLogs  ActivityLog[]
+  communications Communication[]
+  timeEntries   TicketTimeEntry[]
+  csatSurvey    CSATSurvey?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -79,9 +108,12 @@ model Ticket {
   @@index([assignedToId])
   @@index([priority])
   @@index([createdAt])
-  @@index([status, priority])  // Composite index for filtered queries
-  @@index([dueDate])            // Index for SLA queries
-  @@index([folderId])           // Index for folder-based queries
+  @@index([status, priority])
+  @@index([dueDate])
+  @@index([folderId])
+  @@index([customerId])
+  @@index([teamId])
+  @@index([serviceCategoryId])
 }
 
 model Comment {
@@ -92,7 +124,10 @@ model Comment {
   author     User?    @relation(fields: [authorId], references: [id])
   authorId   Int?
   authorName String?
+  isInternal Boolean  @default(false)
   createdAt  DateTime @default(now())
+
+  @@index([ticketId])
 }
 
 model Attachment {
@@ -240,4 +275,302 @@ model GlobalSetting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum EmailProvider {
+  GMAIL
+  OUTLOOK
+  YAHOO
+  YANDEX
+  SENDGRID
+  CUSTOM
+}
+
+model EmailAccount {
+  id              Int          @id @default(autoincrement())
+  email           String       @unique
+  emailAccountName String
+  provider        EmailProvider @default(CUSTOM)
+  imapHost        String?
+  imapPort        Int          @default(993)
+  imapSSL         Boolean      @default(true)
+  smtpHost        String?
+  smtpPort        Int          @default(587)
+  smtpSSL         Boolean      @default(true)
+  smtpTls         Boolean      @default(true)
+  username        String
+  password        String
+  appendTo        String?      @default("INBOX")
+  isActive        Boolean      @default(true)
+  isDefault       Boolean      @default(false)
+  syncType        String       @default("UNSEEN")
+  initialSyncCount Int         @default(100)
+  lastSyncAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  communications  Communication[]
+  tickets        Ticket[]
+
+  @@index([isActive])
+}
+
+model Customer {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String?
+  phone        String?
+  company      String?
+  isBlocked    Boolean  @default(false)
+  tickets      Ticket[]
+  communications Communication[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Team {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  roundRobin  Boolean   @default(false)
+  agents      User[]    @relation("TeamAgents")
+  tickets     Ticket[]
+  savedReplies SavedReply[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SavedReply {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  isPublic  Boolean  @default(false)
+  team      Team?    @relation(fields: [teamId], references: [id])
+  teamId    Int?
+  createdBy User?    @relation(fields: [createdById], references: [id])
+  createdById Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  subject   String
+  content   String
+  type      String   @default("CUSTOM")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Communication {
+  id              Int          @id @default(autoincrement())
+  uid             String?
+  messageId       String?
+  inReplyTo       String?
+  references      String?
+  subject         String
+  content         String
+  htmlContent     String?
+  sender          String
+  senderName      String?
+  recipient       String
+  cc              String?
+  bcc             String?
+  emailAccount    EmailAccount? @relation(fields: [emailAccountId], references: [id])
+  emailAccountId  Int?
+  ticket          Ticket?       @relation(fields: [ticketId], references: [id])
+  ticketId        Int?
+  customer        Customer?     @relation(fields: [customerId], references: [id])
+  customerId      Int?
+  direction       String        @default("INBOUND")
+  isAutoReply     Boolean       @default(false)
+  isRead          Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+
+  @@index([messageId])
+  @@index([ticketId])
+}
+
+model KnowledgeBaseCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  slug        String   @unique
+  route       String   @unique
+  parent      KnowledgeBaseCategory? @relation("KBCategoryHierarchy", fields: [parentId], references: [id])
+  parentId    Int?
+  children    KnowledgeBaseCategory[] @relation("KBCategoryHierarchy")
+  articles    KnowledgeBaseArticle[]
+  order       Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model KnowledgeBaseArticle {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  content     String   @db.Text
+  summary     String?
+  category    KnowledgeBaseCategory? @relation(fields: [categoryId], references: [id])
+  categoryId  Int?
+  author      User?    @relation(fields: [authorId], references: [id])
+  authorId    Int?
+  views       Int      @default(0)
+  isPublished Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([isPublished])
+}
+
+model ServiceCategory {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  slug        String    @unique
+  parent      ServiceCategory? @relation("ServiceCategoryHierarchy", fields: [parentId], references: [id])
+  parentId    Int?
+  children    ServiceCategory[] @relation("ServiceCategoryHierarchy")
+  tickets     Ticket[]
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model AssignmentRule {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  priority    Int      @default(0)
+  isActive    Boolean  @default(true)
+  conditions  Json
+  assignment  Json
+  team       Team?    @relation(fields: [teamId], references: [id])
+  teamId      Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HolidayCalendar {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  isDefault   Boolean   @default(false)
+  holidays    Holiday[]
+  slaPolicies SLAPolicyConfig[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Holiday {
+  id          Int             @id @default(autoincrement())
+  name        String
+  date        DateTime
+  calendar    HolidayCalendar @relation(fields: [calendarId], references: [id])
+  calendarId  Int
+  year        Int
+  createdAt   DateTime        @default(now())
+}
+
+model SLAPolicyConfig {
+  id               Int             @id @default(autoincrement())
+  name             String
+  priority         TicketPriority   @unique
+  responseTimeMins Int
+  resolutionTimeMins Int
+  firstResponseTimeMins Int?
+  appliesTo        TicketStatus[]
+  calendar         HolidayCalendar? @relation(fields: [calendarId], references: [id])
+  calendarId       Int?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model SLAEscalation {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  isActive      Boolean  @default(true)
+  triggerType   String
+  triggerValue  Int
+  actionType    String
+  actionValue   String
+  priority      TicketPriority?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model CSATSurvey {
+  id           Int      @id @default(autoincrement())
+  ticket       Ticket   @relation(fields: [ticketId], references: [id])
+  ticketId     Int      @unique
+  rating       Int
+  feedback     String?
+  employeeName String?
+  createdAt    DateTime @default(now())
+
+  @@index([rating])
+  @@index([createdAt])
+}
+
+model TicketTimeEntry {
+  id          Int      @id @default(autoincrement())
+  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  ticketId    Int
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      Int?
+  startTime   DateTime
+  endTime     DateTime?
+  duration    Int      @default(0)
+  description String?
+  isBillable  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ticketId])
+}
+
+model TicketMerge {
+  id            Int      @id @default(autoincrement())
+  sourceTicket  Ticket   @relation("SourceTicket", fields: [sourceTicketId], references: [id])
+  sourceTicketId Int
+  targetTicket  Ticket   @relation("TargetTicket", fields: [targetTicketId], references: [id])
+  targetTicketId Int
+  mergedAt      DateTime @default(now())
+  mergedBy     User?    @relation(fields: [mergedById], references: [id])
+  mergedById   Int?
+}
+
+model Brand {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique
+  brandName    String
+  logo         String?
+  website      String?
+  defaultEmail String?
+  isDefault    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Report {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  type        String
+  query       Json
+  columns     Json
+  chartType   String?
+  isPublic    Boolean  @default(false)
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdById Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
