@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 // Role: ADMIN, STAFF
@@ -33,76 +33,79 @@ enum UserRole {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  username     String        @unique
-  email        String        @unique
+  id           Int                    @id @default(autoincrement())
+  username     String                 @unique
+  email        String                 @unique
   password     String
   name         String?
-  role         UserRole      @default(STAFF)
-  isActive     Boolean       @default(true)
-  tickets      Ticket[]      @relation("AssignedTickets")
+  role         UserRole               @default(STAFF)
+  isActive     Boolean                @default(true)
+  tickets      Ticket[]               @relation("AssignedTickets")
   comments     Comment[]
   attachments  Attachment[]
   activityLogs ActivityLog[]
-  savedViews   SavedView[] @relation("UserSavedViews")
+  savedViews   SavedView[]            @relation("UserSavedViews")
   assets       Asset[]
-  teams        Team[]        @relation("TeamAgents")
+  teams        Team[]                 @relation("TeamAgents")
   savedReplies SavedReply[]
   kbArticles   KnowledgeBaseArticle[]
   timeEntries  TicketTimeEntry[]
   reports      Report[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  ticketMerges TicketMerge[]
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
 }
 
 model Ticket {
-  id            Int          @id @default(autoincrement())
-  title         String
-  description   String
-  status        TicketStatus @default(TODO)
-  priority      TicketPriority @default(P2)
-  requesterName String?
-  requesterEmail String?
-  assignedTo    User?        @relation("AssignedTickets", fields: [assignedToId], references: [id])
-  assignedToId  Int?
-  slaBreachAt   DateTime?
-  responseBy    DateTime?
-  resolutionBy  DateTime?
-  firstResponseAt DateTime?
-  slaPausedAt   DateTime?
-  slaPauseCount Int        @default(0)
-  dueDate       DateTime?
-  timeSpent     Int          @default(0)
-  folder        Folder?      @relation(fields: [folderId], references: [id])
-  folderId      Int?
-  team          Team?        @relation(fields: [teamId], references: [id])
-  teamId        Int?
-  asset         Asset?       @relation(fields: [assetId], references: [id])
-  assetId       Int?
-  serviceCategory ServiceCategory? @relation(fields: [serviceCategoryId], references: [id])
-  serviceCategoryId Int?
-  customer      Customer?    @relation(fields: [customerId], references: [id])
-  customerId    Int?
-  emailAccount  EmailAccount? @relation(fields: [emailAccountId], references: [id])
-  emailAccountId Int?
-  tags          String[]
-  ticketType    String      @default("INCIDENT")
-  resolution    String?
-  feedbackRating Int?
-  feedbackComment String?
-  viaCustomerPortal Boolean @default(false)
-  slaResponseBreached Boolean @default(false)
-  slaResolutionBreached Boolean @default(false)
-  tasks         Task[]
-  checklists    ChecklistItem[]
-  comments      Comment[]
-  attachments   Attachment[]
-  activityLogs  ActivityLog[]
-  communications Communication[]
-  timeEntries   TicketTimeEntry[]
-  csatSurvey    CSATSurvey?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  id                    Int               @id @default(autoincrement())
+  title                 String
+  description           String
+  status                TicketStatus      @default(TODO)
+  priority              TicketPriority    @default(P2)
+  requesterName         String?
+  requesterEmail        String?
+  assignedTo            User?             @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assignedToId          Int?
+  slaBreachAt           DateTime?
+  responseBy            DateTime?
+  resolutionBy          DateTime?
+  firstResponseAt       DateTime?
+  slaPausedAt           DateTime?
+  slaPauseCount         Int               @default(0)
+  dueDate               DateTime?
+  timeSpent             Int               @default(0)
+  folder                Folder?           @relation(fields: [folderId], references: [id])
+  folderId              Int?
+  team                  Team?             @relation(fields: [teamId], references: [id])
+  teamId                Int?
+  asset                 Asset?            @relation(fields: [assetId], references: [id])
+  assetId               Int?
+  serviceCategory       ServiceCategory?  @relation(fields: [serviceCategoryId], references: [id])
+  serviceCategoryId     Int?
+  customer              Customer?         @relation(fields: [customerId], references: [id])
+  customerId            Int?
+  emailAccount          EmailAccount?     @relation(fields: [emailAccountId], references: [id])
+  emailAccountId        Int?
+  tags                  String[]
+  ticketType            String            @default("INCIDENT")
+  resolution            String?
+  feedbackRating        Int?
+  feedbackComment       String?
+  viaCustomerPortal     Boolean           @default(false)
+  slaResponseBreached   Boolean           @default(false)
+  slaResolutionBreached Boolean           @default(false)
+  tasks                 Task[]
+  checklists            ChecklistItem[]
+  comments              Comment[]
+  attachments           Attachment[]
+  activityLogs          ActivityLog[]
+  communications        Communication[]
+  timeEntries           TicketTimeEntry[]
+  csatSurvey            CSATSurvey?
+  sourceMerges          TicketMerge[]     @relation("SourceTicket")
+  targetMerges          TicketMerge[]     @relation("TargetTicket")
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   @@index([status])
   @@index([assignedToId])
@@ -131,16 +134,16 @@ model Comment {
 }
 
 model Attachment {
-  id        Int      @id @default(autoincrement())
-  fileName  String
-  filePath  String
-  fileSize  Int
-  mimeType  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
-  ticketId  Int
+  id         Int      @id @default(autoincrement())
+  fileName   String
+  filePath   String
+  fileSize   Int
+  mimeType   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id])
+  ticketId   Int
   uploadedBy User?    @relation(fields: [authorId], references: [id])
-  authorId  Int?
-  createdAt DateTime @default(now())
+  authorId   Int?
+  createdAt  DateTime @default(now())
 }
 
 model ActivityLog {
@@ -149,8 +152,8 @@ model ActivityLog {
   ticketId  Int
   user      User?    @relation(fields: [userId], references: [id])
   userId    Int?
-  action    String   // e.g., "STATUS_CHANGE", "ASSIGNMENT", "PRIORITY_CHANGE"
-  field     String?  // e.g., "status"
+  action    String // e.g., "STATUS_CHANGE", "ASSIGNMENT", "PRIORITY_CHANGE"
+  field     String? // e.g., "status"
   oldValue  String?
   newValue  String?
   createdAt DateTime @default(now())
@@ -169,15 +172,15 @@ model SavedView {
 }
 
 model TicketTemplate {
-  id          Int      @id @default(autoincrement())
+  id          Int            @id @default(autoincrement())
   name        String
   description String
-  status      TicketStatus  @default(TODO)
+  status      TicketStatus   @default(TODO)
   priority    TicketPriority @default(P2)
   tags        String[]
-  checklists  Json?         
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  checklists  Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 }
 
 model Task {
@@ -239,34 +242,34 @@ model Space {
 }
 
 model Folder {
-  id          Int      @id @default(autoincrement())
-  name        String
-  space       Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  spaceId     Int
-  tickets     Ticket[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  spaceId   Int
+  tickets   Ticket[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Asset {
-  id           Int      @id @default(autoincrement())
-  name         String
-  type         String   // e.g., LAPTOP, DESKTOP, SERVER, SOFTWARE
-  status       String   @default("ACTIVE") // e.g., ACTIVE, MAINTENANCE, RETIRED
-  description  String?
-  serialNumber String?  @unique
-  manufacturer String?
-  model        String?
-  location     String?
-  purchaseDate DateTime?
+  id             Int       @id @default(autoincrement())
+  name           String
+  type           String // e.g., LAPTOP, DESKTOP, SERVER, SOFTWARE
+  status         String    @default("ACTIVE") // e.g., ACTIVE, MAINTENANCE, RETIRED
+  description    String?
+  serialNumber   String?   @unique
+  manufacturer   String?
+  model          String?
+  location       String?
+  purchaseDate   DateTime?
   warrantyExpiry DateTime?
-  purchaseCost Decimal?
-  specs        Json?    // For technical specs like RAM, CPU, License Keys
-  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
-  assignedToId Int?
-  tickets      Ticket[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  purchaseCost   Decimal?
+  specs          Json? // For technical specs like RAM, CPU, License Keys
+  assignedTo     User?     @relation(fields: [assignedToId], references: [id])
+  assignedToId   Int?
+  tickets        Ticket[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model GlobalSetting {
@@ -287,71 +290,72 @@ enum EmailProvider {
 }
 
 model EmailAccount {
-  id              Int          @id @default(autoincrement())
-  email           String       @unique
+  id               Int           @id @default(autoincrement())
+  email            String        @unique
   emailAccountName String
-  provider        EmailProvider @default(CUSTOM)
-  imapHost        String?
-  imapPort        Int          @default(993)
-  imapSSL         Boolean      @default(true)
-  smtpHost        String?
-  smtpPort        Int          @default(587)
-  smtpSSL         Boolean      @default(true)
-  smtpTls         Boolean      @default(true)
-  username        String
-  password        String
-  appendTo        String?      @default("INBOX")
-  isActive        Boolean      @default(true)
-  isDefault       Boolean      @default(false)
-  syncType        String       @default("UNSEEN")
-  initialSyncCount Int         @default(100)
-  lastSyncAt      DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  provider         EmailProvider @default(CUSTOM)
+  imapHost         String?
+  imapPort         Int           @default(993)
+  imapSSL          Boolean       @default(true)
+  smtpHost         String?
+  smtpPort         Int           @default(587)
+  smtpSSL          Boolean       @default(true)
+  smtpTls          Boolean       @default(true)
+  username         String
+  password         String
+  appendTo         String?       @default("INBOX")
+  isActive         Boolean       @default(true)
+  isDefault        Boolean       @default(false)
+  syncType         String        @default("UNSEEN")
+  initialSyncCount Int           @default(100)
+  lastSyncAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
-  communications  Communication[]
+  communications Communication[]
   tickets        Ticket[]
 
   @@index([isActive])
 }
 
 model Customer {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  name         String?
-  phone        String?
-  company      String?
-  isBlocked    Boolean  @default(false)
-  tickets      Ticket[]
+  id             Int             @id @default(autoincrement())
+  email          String          @unique
+  name           String?
+  phone          String?
+  company        String?
+  isBlocked      Boolean         @default(false)
+  tickets        Ticket[]
   communications Communication[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model Team {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  description String?
-  isActive    Boolean   @default(true)
-  roundRobin  Boolean   @default(false)
-  agents      User[]    @relation("TeamAgents")
-  tickets     Ticket[]
-  savedReplies SavedReply[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  description     String?
+  isActive        Boolean          @default(true)
+  roundRobin      Boolean          @default(false)
+  agents          User[]           @relation("TeamAgents")
+  tickets         Ticket[]
+  savedReplies    SavedReply[]
+  assignmentRules AssignmentRule[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model SavedReply {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String
-  isPublic  Boolean  @default(false)
-  team      Team?    @relation(fields: [teamId], references: [id])
-  teamId    Int?
-  createdBy User?    @relation(fields: [createdById], references: [id])
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  isPublic    Boolean  @default(false)
+  team        Team?    @relation(fields: [teamId], references: [id])
+  teamId      Int?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
   createdById Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model EmailTemplate {
@@ -366,83 +370,83 @@ model EmailTemplate {
 }
 
 model Communication {
-  id              Int          @id @default(autoincrement())
-  uid             String?
-  messageId       String?
-  inReplyTo       String?
-  references      String?
-  subject         String
-  content         String
-  htmlContent     String?
-  sender          String
-  senderName      String?
-  recipient       String
-  cc              String?
-  bcc             String?
-  emailAccount    EmailAccount? @relation(fields: [emailAccountId], references: [id])
-  emailAccountId  Int?
-  ticket          Ticket?       @relation(fields: [ticketId], references: [id])
-  ticketId        Int?
-  customer        Customer?     @relation(fields: [customerId], references: [id])
-  customerId      Int?
-  direction       String        @default("INBOUND")
-  isAutoReply     Boolean       @default(false)
-  isRead          Boolean       @default(true)
-  createdAt       DateTime      @default(now())
+  id             Int           @id @default(autoincrement())
+  uid            String?
+  messageId      String?
+  inReplyTo      String?
+  references     String?
+  subject        String
+  content        String
+  htmlContent    String?
+  sender         String
+  senderName     String?
+  recipient      String
+  cc             String?
+  bcc            String?
+  emailAccount   EmailAccount? @relation(fields: [emailAccountId], references: [id])
+  emailAccountId Int?
+  ticket         Ticket?       @relation(fields: [ticketId], references: [id])
+  ticketId       Int?
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  customerId     Int?
+  direction      String        @default("INBOUND")
+  isAutoReply    Boolean       @default(false)
+  isRead         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
 
   @@index([messageId])
   @@index([ticketId])
 }
 
 model KnowledgeBaseCategory {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+  id          Int                     @id @default(autoincrement())
+  name        String                  @unique
   description String?
-  slug        String   @unique
-  route       String   @unique
-  parent      KnowledgeBaseCategory? @relation("KBCategoryHierarchy", fields: [parentId], references: [id])
+  slug        String                  @unique
+  route       String                  @unique
+  parent      KnowledgeBaseCategory?  @relation("KBCategoryHierarchy", fields: [parentId], references: [id])
   parentId    Int?
   children    KnowledgeBaseCategory[] @relation("KBCategoryHierarchy")
   articles    KnowledgeBaseArticle[]
-  order       Int      @default(0)
-  isPublished Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  order       Int                     @default(0)
+  isPublished Boolean                 @default(true)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
 }
 
 model KnowledgeBaseArticle {
-  id          Int      @id @default(autoincrement())
+  id          Int                    @id @default(autoincrement())
   title       String
-  slug        String   @unique
-  content     String   @db.Text
+  slug        String                 @unique
+  content     String                 @db.Text
   summary     String?
   category    KnowledgeBaseCategory? @relation(fields: [categoryId], references: [id])
   categoryId  Int?
-  author      User?    @relation(fields: [authorId], references: [id])
+  author      User?                  @relation(fields: [authorId], references: [id])
   authorId    Int?
-  views       Int      @default(0)
-  isPublished Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
+  views       Int                    @default(0)
+  isPublished Boolean                @default(true)
+  isFeatured  Boolean                @default(false)
   tags        String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
 
   @@index([categoryId])
   @@index([isPublished])
 }
 
 model ServiceCategory {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
   description String?
-  slug        String    @unique
-  parent      ServiceCategory? @relation("ServiceCategoryHierarchy", fields: [parentId], references: [id])
+  slug        String            @unique
+  parent      ServiceCategory?  @relation("ServiceCategoryHierarchy", fields: [parentId], references: [id])
   parentId    Int?
   children    ServiceCategory[] @relation("ServiceCategoryHierarchy")
   tickets     Ticket[]
-  order       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  order       Int               @default(0)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model AssignmentRule {
@@ -453,58 +457,58 @@ model AssignmentRule {
   isActive    Boolean  @default(true)
   conditions  Json
   assignment  Json
-  team       Team?    @relation(fields: [teamId], references: [id])
+  team        Team?    @relation(fields: [teamId], references: [id])
   teamId      Int?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
 model HolidayCalendar {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
+  id          Int               @id @default(autoincrement())
+  name        String            @unique
   description String?
-  isDefault   Boolean   @default(false)
+  isDefault   Boolean           @default(false)
   holidays    Holiday[]
   slaPolicies SLAPolicyConfig[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model Holiday {
-  id          Int             @id @default(autoincrement())
-  name        String
-  date        DateTime
-  calendar    HolidayCalendar @relation(fields: [calendarId], references: [id])
-  calendarId  Int
-  year        Int
-  createdAt   DateTime        @default(now())
+  id         Int             @id @default(autoincrement())
+  name       String
+  date       DateTime
+  calendar   HolidayCalendar @relation(fields: [calendarId], references: [id])
+  calendarId Int
+  year       Int
+  createdAt  DateTime        @default(now())
 }
 
 model SLAPolicyConfig {
-  id               Int             @id @default(autoincrement())
-  name             String
-  priority         TicketPriority   @unique
-  responseTimeMins Int
-  resolutionTimeMins Int
+  id                    Int              @id @default(autoincrement())
+  name                  String
+  priority              TicketPriority   @unique
+  responseTimeMins      Int
+  resolutionTimeMins    Int
   firstResponseTimeMins Int?
-  appliesTo        TicketStatus[]
-  calendar         HolidayCalendar? @relation(fields: [calendarId], references: [id])
-  calendarId       Int?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  appliesTo             TicketStatus[]
+  calendar              HolidayCalendar? @relation(fields: [calendarId], references: [id])
+  calendarId            Int?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 }
 
 model SLAEscalation {
-  id            Int      @id @default(autoincrement())
-  name          String   @unique
-  isActive      Boolean  @default(true)
-  triggerType   String
-  triggerValue  Int
-  actionType    String
-  actionValue   String
-  priority      TicketPriority?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           Int             @id @default(autoincrement())
+  name         String          @unique
+  isActive     Boolean         @default(true)
+  triggerType  String
+  triggerValue Int
+  actionType   String
+  actionValue  String
+  priority     TicketPriority?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 }
 
 model CSATSurvey {
@@ -521,31 +525,31 @@ model CSATSurvey {
 }
 
 model TicketTimeEntry {
-  id          Int      @id @default(autoincrement())
-  ticket      Ticket   @relation(fields: [ticketId], references: [id])
+  id          Int       @id @default(autoincrement())
+  ticket      Ticket    @relation(fields: [ticketId], references: [id])
   ticketId    Int
-  user        User?    @relation(fields: [userId], references: [id])
+  user        User?     @relation(fields: [userId], references: [id])
   userId      Int?
   startTime   DateTime
   endTime     DateTime?
-  duration    Int      @default(0)
+  duration    Int       @default(0)
   description String?
-  isBillable  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isBillable  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([ticketId])
 }
 
 model TicketMerge {
-  id            Int      @id @default(autoincrement())
-  sourceTicket  Ticket   @relation("SourceTicket", fields: [sourceTicketId], references: [id])
+  id             Int      @id @default(autoincrement())
+  sourceTicket   Ticket   @relation("SourceTicket", fields: [sourceTicketId], references: [id])
   sourceTicketId Int
-  targetTicket  Ticket   @relation("TargetTicket", fields: [targetTicketId], references: [id])
+  targetTicket   Ticket   @relation("TargetTicket", fields: [targetTicketId], references: [id])
   targetTicketId Int
-  mergedAt      DateTime @default(now())
-  mergedBy     User?    @relation(fields: [mergedById], references: [id])
-  mergedById   Int?
+  mergedAt       DateTime @default(now())
+  mergedBy       User?    @relation(fields: [mergedById], references: [id])
+  mergedById     Int?
 }
 
 model Brand {
